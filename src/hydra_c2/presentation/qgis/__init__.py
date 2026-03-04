@@ -1,0 +1,1 @@
+"""Presentation: QGIS plugin integration."""

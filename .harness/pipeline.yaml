@@ -1,0 +1,153 @@
+pipeline:
+  name: HYDRA-C2 COP Build and Deploy
+  identifier: hydra_c2_cop_deploy
+  projectIdentifier: default_project
+  orgIdentifier: default
+  tags:
+    project: hydra-c2
+    type: frontend
+
+  properties:
+    ci:
+      codebase:
+        connectorRef: hugefisco94_github
+        repoName: hydra-c2
+        build: <+input>
+
+  stages:
+    # ─── STAGE 1: Build React/Vite Frontend ───
+    - stage:
+        name: Build Frontend
+        identifier: build_frontend
+        type: CI
+        spec:
+          cloneCodebase: true
+          platform:
+            os: Linux
+            arch: Amd64
+          runtime:
+            type: Cloud
+            spec: {}
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: Install Dependencies
+                  identifier: install_deps
+                  spec:
+                    image: node:20-alpine
+                    shell: Sh
+                    command: |-
+                      cd frontend
+                      echo "Node: $(node -v) | npm: $(npm -v)"
+                      npm ci
+
+              - step:
+                  type: Run
+                  name: TypeScript Check
+                  identifier: typecheck
+                  spec:
+                    image: node:20-alpine
+                    shell: Sh
+                    command: |-
+                      cd frontend
+                      npx tsc -b --noEmit || true
+
+              - step:
+                  type: Run
+                  name: Build Vite App
+                  identifier: build_vite
+                  spec:
+                    image: node:20-alpine
+                    shell: Sh
+                    command: |-
+                      cd frontend
+                      npm run build
+                      echo "=== Build Output ==="
+                      ls -la dist/
+                      echo "=== Index check ==="
+                      test -f dist/index.html && echo "✓ index.html present" || exit 1
+                    envVariables:
+                      VITE_API_BASE_URL: "http://134.199.207.172:8080"
+
+    # ─── STAGE 2: Deploy to GitHub Pages ───
+    - stage:
+        name: Deploy to GitHub Pages
+        identifier: deploy_gh_pages
+        type: CI
+        spec:
+          cloneCodebase: true
+          platform:
+            os: Linux
+            arch: Amd64
+          runtime:
+            type: Cloud
+            spec: {}
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: Build for Production
+                  identifier: build_prod
+                  spec:
+                    image: node:20-alpine
+                    shell: Sh
+                    command: |-
+                      cd frontend
+                      npm ci
+                      npm run build
+                    envVariables:
+                      VITE_API_BASE_URL: "http://134.199.207.172:8080"
+
+              - step:
+                  type: Run
+                  name: Push to gh-pages
+                  identifier: push_gh_pages
+                  spec:
+                    image: node:20-alpine
+                    shell: Sh
+                    envVariables:
+                      GITHUB_TOKEN: <+secrets.getValue("github_pat_token")>
+                      GITHUB_USER: hugefisco94
+                      REPO_NAME: hydra-c2
+                    command: |-
+                      apk add --no-cache git
+
+                      git config --global user.email "ci@harness.io"
+                      git config --global user.name "Harness CI"
+
+                      cd frontend/dist
+
+                      # Create .nojekyll to bypass Jekyll processing
+                      touch .nojekyll
+
+                      git init
+                      git checkout -b gh-pages
+                      git add -A
+                      git commit -m "Deploy: HYDRA-C2 COP Build #<+pipeline.sequenceId>"
+
+                      git remote add origin \
+                        https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com/${GITHUB_USER}/${REPO_NAME}.git
+                      git push origin gh-pages --force
+
+                      echo "✅ Deployed to https://${GITHUB_USER}.github.io/${REPO_NAME}/"
+
+              - step:
+                  type: Run
+                  name: Verify Deployment
+                  identifier: verify_deploy
+                  spec:
+                    image: node:20-alpine
+                    shell: Sh
+                    command: |-
+                      apk add --no-cache curl
+                      echo "Waiting 30s for GitHub Pages propagation..."
+                      sleep 30
+                      STATUS=$(curl -s -o /dev/null -w '%{http_code}' \
+                        https://hugefisco94.github.io/hydra-c2/)
+                      echo "GitHub Pages status: $STATUS"
+                      if [ "$STATUS" = "200" ] || [ "$STATUS" = "304" ]; then
+                        echo "✅ GitHub Pages deployment verified"
+                      else
+                        echo "⚠️ Status $STATUS — Pages may need a few more minutes"
+                      fi

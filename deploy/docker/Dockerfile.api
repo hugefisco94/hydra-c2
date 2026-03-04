@@ -1,0 +1,78 @@
+# ============================================================================
+# HYDRA-C2 FastAPI API — Multi-Stage Production Dockerfile
+# ============================================================================
+# Build context: project root (D:\repo\newproject\hydra-c2)
+# Dockerfile path: deploy/docker/Dockerfile.api
+# Entry point: hydra_c2.presentation.web.api.main:app
+# ============================================================================
+
+# ============================================================================
+# Stage 1: Builder — Install dependencies with uv
+# ============================================================================
+FROM python:3.12-slim AS builder
+
+# Set environment variables for build
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    UV_COMPILE_BYTECODE=1
+
+# Install uv package manager
+RUN pip install --no-cache-dir uv
+
+# Create virtual environment
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Copy dependency files and source
+WORKDIR /build
+COPY pyproject.toml README.md uv.lock* ./
+COPY src/ ./src/
+
+# Install package (non-editable for production)
+RUN uv pip install --no-cache-dir .
+
+# ============================================================================
+# Stage 2: Runtime — Minimal production image
+# ============================================================================
+FROM python:3.12-slim
+
+# Set environment variables for runtime
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PATH="/opt/venv/bin:$PATH"
+
+# Install runtime dependencies (curl for healthcheck)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user for security
+RUN useradd -m -u 1000 hydra
+
+# Copy virtual environment from builder
+COPY --from=builder /opt/venv /opt/venv
+
+# Set working directory
+WORKDIR /app
+
+# Copy application source code
+COPY src/ ./src/
+
+# Change ownership to non-root user
+RUN chown -R hydra:hydra /app
+
+# Switch to non-root user
+USER hydra
+
+# Expose API port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Run FastAPI application with uvicorn
+CMD ["uvicorn", "hydra_c2.presentation.web.api.main:app", \
+     "--host", "0.0.0.0", \
+     "--port", "8000"]

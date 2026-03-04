@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+/* Leaflet popup overrides for dark theme */
+.leaflet-popup-content-wrapper {
+  background: #1f2937;
+  color: #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgb(0 0 0 / 0.5);
+}
+
+.leaflet-popup-tip {
+  background: #1f2937;
+}
+
+.leaflet-popup-close-button {
+  color: #9ca3af !important;
+}
+
+.leaflet-popup-close-button:hover {
+  color: #fff !important;
+}
+
+/* Dark zoom controls */
+.leaflet-control-zoom a {
+  background: #1f2937 !important;
+  color: #e5e7eb !important;
+  border-color: #374151 !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background: #374151 !important;
+}
+
+/* Attribution */
+.leaflet-control-attribution {
+  background: rgb(17 24 39 / 0.8) !important;
+  color: #6b7280 !important;
+  font-size: 10px !important;
+}
+
+.leaflet-control-attribution a {
+  color: #9ca3af !important;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #111827;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #374151;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #4b5563;
+}
