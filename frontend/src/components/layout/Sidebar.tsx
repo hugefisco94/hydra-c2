@@ -5,17 +5,44 @@
 import { useActorStore, useFilteredActors } from '../../store/actorStore';
 import type { DomainFilter } from '../../store/actorStore';
 import { AFFILIATION_COLORS, DOMAIN_LABELS } from '../../types';
-import type { Domain } from '../../types';
+import type { Affiliation, Domain } from '../../types';
 
 const DOMAINS: Domain[] = ['LAND', 'AIR', 'SEA', 'SUBSURFACE', 'SPACE', 'CYBER'];
+const AFFILIATIONS: Affiliation[] = ['HOSTILE', 'FRIEND', 'NEUTRAL', 'UNKNOWN'];
+
+const THREAT_LABEL: Record<Affiliation, string> = {
+  HOSTILE: 'HIGH',
+  FRIEND: 'NOMINAL',
+  NEUTRAL: 'MONITOR',
+  UNKNOWN: 'UNCLEAR',
+};
 
 export function Sidebar() {
   const sidebarOpen = useActorStore((s) => s.sidebarOpen);
+  const allActors = useActorStore((s) => s.actors);
   const selectedActor = useActorStore((s) => s.selectedActor);
   const selectActor = useActorStore((s) => s.selectActor);
   const domainFilters = useActorStore((s) => s.domainFilters);
   const toggleDomainFilter = useActorStore((s) => s.toggleDomainFilter);
   const actors = useFilteredActors();
+
+  const affiliationCounts = AFFILIATIONS.reduce<Record<Affiliation, number>>(
+    (acc, affiliation) => {
+      acc[affiliation] = allActors.filter((actor) => actor.affiliation === affiliation).length;
+      return acc;
+    },
+    { HOSTILE: 0, FRIEND: 0, NEUTRAL: 0, UNKNOWN: 0 },
+  );
+
+  const domainCounts = DOMAINS.reduce<Record<Domain, number>>(
+    (acc, domain) => {
+      acc[domain] = allActors.filter((actor) => actor.domain === domain).length;
+      return acc;
+    },
+    { LAND: 0, AIR: 0, SEA: 0, SUBSURFACE: 0, SPACE: 0, CYBER: 0 },
+  );
+
+  const maxAffiliationCount = Math.max(1, ...Object.values(affiliationCounts));
 
   if (!sidebarOpen) return null;
 
@@ -88,6 +115,50 @@ export function Sidebar() {
             );
           })
         )}
+      </div>
+
+      <div className="p-3 border-t border-gray-700 bg-gray-950/80 space-y-4">
+        <div>
+          <h3 className="text-[11px] font-semibold text-gray-500 uppercase tracking-[0.18em] mb-2">
+            Threat Assessment
+          </h3>
+          <div className="space-y-1.5">
+            {AFFILIATIONS.map((affiliation) => {
+              const count = affiliationCounts[affiliation];
+              const ratio = count / maxAffiliationCount;
+              const filled = Math.round(ratio * 12);
+              const bar = `${'█'.repeat(filled)}${'░'.repeat(12 - filled)}`;
+              const color = AFFILIATION_COLORS[affiliation];
+
+              return (
+                <div key={affiliation} className="font-mono text-[11px] flex items-center gap-2">
+                  <span className="w-[64px] text-gray-400">{affiliation}:</span>
+                  <span className="w-4 text-gray-200 text-right">{count}</span>
+                  <span className="tracking-tight" style={{ color }}>
+                    {bar}
+                  </span>
+                  <span className="ml-auto text-gray-500">{THREAT_LABEL[affiliation]}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-[11px] font-semibold text-gray-500 uppercase tracking-[0.18em] mb-2">
+            Domain Overview
+          </h3>
+          <div className="space-y-1 text-xs">
+            {DOMAINS.map((domain) => (
+              <div key={domain} className="font-mono flex items-center justify-between text-gray-300">
+                <span>
+                  {DOMAIN_LABELS[domain]} {domain}
+                </span>
+                <span className="text-gray-500">{domainCounts[domain]} actors</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -5,6 +5,8 @@
 import { create } from 'zustand';
 import type { Actor, HealthStatus } from '../types';
 
+export type ConnectionState = 'connecting' | 'connected' | 'disconnected';
+
 export interface DomainFilter {
   LAND: boolean;
   AIR: boolean;
@@ -19,6 +21,7 @@ interface ActorState {
   actors: Actor[];
   selectedActor: Actor | null;
   health: HealthStatus | null;
+  connectionState: ConnectionState;
 
   // UI
   sidebarOpen: boolean;
@@ -28,6 +31,7 @@ interface ActorState {
   setActors: (actors: Actor[]) => void;
   selectActor: (actor: Actor | null) => void;
   setHealth: (health: HealthStatus) => void;
+  setConnectionState: (state: ConnectionState) => void;
   toggleSidebar: () => void;
   toggleDomainFilter: (domain: keyof DomainFilter) => void;
 }
@@ -37,6 +41,7 @@ export const useActorStore = create<ActorState>((set) => ({
   actors: [],
   selectedActor: null,
   health: null,
+  connectionState: 'connecting',
   sidebarOpen: true,
   domainFilters: {
     LAND: true,
@@ -53,6 +58,8 @@ export const useActorStore = create<ActorState>((set) => ({
   selectActor: (actor) => set({ selectedActor: actor }),
 
   setHealth: (health) => set({ health }),
+
+  setConnectionState: (connectionState) => set({ connectionState }),
 
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
 
