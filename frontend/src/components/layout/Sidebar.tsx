@@ -1,7 +1,3 @@
-/**
- * Sidebar — actor list + domain filters
- */
-
 import { useActorStore, useFilteredActors } from '../../store/actorStore';
 import type { DomainFilter } from '../../store/actorStore';
 import { AFFILIATION_COLORS, DOMAIN_LABELS } from '../../types';
@@ -10,45 +6,37 @@ import type { Affiliation, Domain } from '../../types';
 const DOMAINS: Domain[] = ['LAND', 'AIR', 'SEA', 'SUBSURFACE', 'SPACE', 'CYBER'];
 const AFFILIATIONS: Affiliation[] = ['HOSTILE', 'FRIEND', 'NEUTRAL', 'UNKNOWN'];
 
-const THREAT_LABEL: Record<Affiliation, string> = {
-  HOSTILE: 'HIGH',
-  FRIEND: 'NOMINAL',
-  NEUTRAL: 'MONITOR',
-  UNKNOWN: 'UNCLEAR',
-};
-
 export function Sidebar() {
   const sidebarOpen = useActorStore((s) => s.sidebarOpen);
   const allActors = useActorStore((s) => s.actors);
+  const analyticsOverview = useActorStore((s) => s.analyticsOverview);
+  const threatAssessment = useActorStore((s) => s.threatAssessment);
   const selectedActor = useActorStore((s) => s.selectedActor);
   const selectActor = useActorStore((s) => s.selectActor);
   const domainFilters = useActorStore((s) => s.domainFilters);
   const toggleDomainFilter = useActorStore((s) => s.toggleDomainFilter);
   const actors = useFilteredActors();
 
-  const affiliationCounts = AFFILIATIONS.reduce<Record<Affiliation, number>>(
-    (acc, affiliation) => {
-      acc[affiliation] = allActors.filter((actor) => actor.affiliation === affiliation).length;
-      return acc;
-    },
-    { HOSTILE: 0, FRIEND: 0, NEUTRAL: 0, UNKNOWN: 0 },
-  );
+  const byAffiliation = analyticsOverview?.by_affiliation ?? {};
+  const byDomain = analyticsOverview?.by_domain ?? {};
+  const forceRatio = analyticsOverview?.force_ratio?.ratio ?? 0;
+  const formattedRatio = Number.isFinite(forceRatio) && forceRatio > 0
+    ? `${forceRatio.toFixed(2)}:1`
+    : 'N/A';
 
-  const domainCounts = DOMAINS.reduce<Record<Domain, number>>(
-    (acc, domain) => {
-      acc[domain] = allActors.filter((actor) => actor.domain === domain).length;
-      return acc;
-    },
-    { LAND: 0, AIR: 0, SEA: 0, SUBSURFACE: 0, SPACE: 0, CYBER: 0 },
-  );
+  const topThreats = [...(threatAssessment?.assessments ?? [])]
+    .sort((a, b) => b.composite_score - a.composite_score)
+    .slice(0, 5);
 
-  const maxAffiliationCount = Math.max(1, ...Object.values(affiliationCounts));
+  const threatBadges = {
+    critical: threatAssessment?.critical_count ?? 0,
+    high: threatAssessment?.high_count ?? 0,
+  };
 
   if (!sidebarOpen) return null;
 
   return (
     <div className="w-72 bg-gray-900 border-r border-gray-700 flex flex-col shrink-0">
-      {/* Domain Filters */}
       <div className="p-3 border-b border-gray-700">
         <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
           Domain Filter
@@ -65,7 +53,96 @@ export function Sidebar() {
         </div>
       </div>
 
-      {/* Actor Count */}
+      <div className="p-3 border-b border-gray-800 space-y-3 bg-gray-950/60">
+        <div className="flex items-center justify-between">
+          <h3 className="text-[11px] font-semibold text-gray-400 uppercase tracking-[0.18em]">
+            Force Status
+          </h3>
+          <span className="text-[10px] text-emerald-300 font-mono flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 live-blink" />
+            LIVE
+          </span>
+        </div>
+
+        <div className="flex items-end justify-between">
+          <div>
+            <div className="text-[10px] text-gray-500 uppercase tracking-[0.16em]">Tracks</div>
+            <div className="text-xl font-mono text-gray-100 font-semibold leading-none">
+              {analyticsOverview?.total_tracks ?? allActors.length}
+            </div>
+          </div>
+          <div className="force-ratio-box">
+            <div className="text-[10px] text-gray-500 uppercase tracking-[0.16em]">Force Ratio</div>
+            <div className="force-ratio-value">{formattedRatio}</div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-1.5 text-[11px] font-mono">
+          {AFFILIATIONS.map((affiliation) => (
+            <div key={affiliation} className="flex items-center justify-between px-2 py-1 rounded bg-gray-900/70 border border-gray-800">
+              <span style={{ color: AFFILIATION_COLORS[affiliation] }}>{affiliation}</span>
+              <span className="text-gray-200">{byAffiliation[affiliation] ?? 0}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-2 gap-1.5 text-[11px]">
+          {['LAND', 'AIR', 'SEA', 'CYBER'].map((domain) => (
+            <div key={domain} className="flex items-center justify-between px-2 py-1 rounded border border-gray-800 bg-gray-900/40">
+              <span className="text-gray-400 font-mono">{domain}</span>
+              <span className="text-gray-200 font-mono">{byDomain[domain] ?? 0}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="p-3 border-b border-gray-800 space-y-2.5 bg-gray-950/70">
+        <div className="flex items-center justify-between">
+          <h3 className="text-[11px] font-semibold text-gray-400 uppercase tracking-[0.18em]">
+            Threat Board
+          </h3>
+          <div className="flex items-center gap-1.5 text-[10px] font-mono">
+            <span className="px-1.5 py-0.5 rounded bg-red-950/50 border border-red-700/40 threat-critical">
+              CRIT {threatBadges.critical}
+            </span>
+            <span className="px-1.5 py-0.5 rounded bg-orange-950/50 border border-orange-700/40 threat-high">
+              HIGH {threatBadges.high}
+            </span>
+          </div>
+        </div>
+
+        {topThreats.length === 0 ? (
+          <div className="text-xs text-gray-600 font-mono py-2">No threat tracks</div>
+        ) : (
+          <div className="space-y-2">
+            {topThreats.map((threat) => {
+              const classificationClass = `threat-${threat.classification.toLowerCase()}`;
+              const scoreWidth = `${Math.max(0, Math.min(1, threat.composite_score)) * 100}%`;
+              const domainLabel = threat.domain as Domain;
+              const domainIcon = DOMAIN_LABELS[domainLabel] ?? '•';
+
+              return (
+                <div key={threat.actor_id} className="rounded border border-gray-800 bg-gray-900/50 px-2 py-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className={`text-xs font-semibold truncate ${classificationClass}`}>{threat.name}</span>
+                    <span className="text-[10px] text-gray-400 font-mono">
+                      {domainIcon} {threat.domain}
+                    </span>
+                  </div>
+                  <div className="threat-score-track mt-1">
+                    <div className={`threat-score-fill ${classificationClass}`} style={{ width: scoreWidth }} />
+                  </div>
+                  <div className="mt-1 text-[10px] text-gray-500 font-mono flex items-center justify-between">
+                    <span>SCORE {threat.composite_score.toFixed(3)}</span>
+                    <span>SEOUL {threat.distance_to_seoul_km.toFixed(1)}km</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       <div className="px-3 py-2 border-b border-gray-800 flex items-center justify-between">
         <span className="text-xs text-gray-500 uppercase tracking-wider">
           Actors
@@ -115,50 +192,6 @@ export function Sidebar() {
             );
           })
         )}
-      </div>
-
-      <div className="p-3 border-t border-gray-700 bg-gray-950/80 space-y-4">
-        <div>
-          <h3 className="text-[11px] font-semibold text-gray-500 uppercase tracking-[0.18em] mb-2">
-            Threat Assessment
-          </h3>
-          <div className="space-y-1.5">
-            {AFFILIATIONS.map((affiliation) => {
-              const count = affiliationCounts[affiliation];
-              const ratio = count / maxAffiliationCount;
-              const filled = Math.round(ratio * 12);
-              const bar = `${'█'.repeat(filled)}${'░'.repeat(12 - filled)}`;
-              const color = AFFILIATION_COLORS[affiliation];
-
-              return (
-                <div key={affiliation} className="font-mono text-[11px] flex items-center gap-2">
-                  <span className="w-[64px] text-gray-400">{affiliation}:</span>
-                  <span className="w-4 text-gray-200 text-right">{count}</span>
-                  <span className="tracking-tight" style={{ color }}>
-                    {bar}
-                  </span>
-                  <span className="ml-auto text-gray-500">{THREAT_LABEL[affiliation]}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        <div>
-          <h3 className="text-[11px] font-semibold text-gray-500 uppercase tracking-[0.18em] mb-2">
-            Domain Overview
-          </h3>
-          <div className="space-y-1 text-xs">
-            {DOMAINS.map((domain) => (
-              <div key={domain} className="font-mono flex items-center justify-between text-gray-300">
-                <span>
-                  {DOMAIN_LABELS[domain]} {domain}
-                </span>
-                <span className="text-gray-500">{domainCounts[domain]} actors</span>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
     </div>
   );

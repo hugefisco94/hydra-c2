@@ -20,6 +20,8 @@ function App() {
   const setActors = useActorStore((s) => s.setActors);
   const setHealth = useActorStore((s) => s.setHealth);
   const setConnectionState = useActorStore((s) => s.setConnectionState);
+  const fetchThreatAssessment = useActorStore((s) => s.fetchThreatAssessment);
+  const fetchAnalyticsOverview = useActorStore((s) => s.fetchAnalyticsOverview);
   const toggleSidebar = useActorStore((s) => s.toggleSidebar);
 
   const [showThreatRings, setShowThreatRings] = useState(true);
@@ -56,16 +58,22 @@ function App() {
     // Initial fetch
     checkHealth();
     fetchActors();
+    fetchThreatAssessment();
+    fetchAnalyticsOverview();
 
     // Polling intervals
     const healthInterval = setInterval(checkHealth, 10_000);
-    const actorInterval = setInterval(fetchActors, POLL_INTERVAL_MS);
+    const actorInterval = setInterval(() => {
+      fetchActors();
+      fetchThreatAssessment();
+      fetchAnalyticsOverview();
+    }, POLL_INTERVAL_MS);
 
     return () => {
       clearInterval(healthInterval);
       clearInterval(actorInterval);
     };
-  }, [checkHealth, fetchActors]);
+  }, [checkHealth, fetchActors, fetchThreatAssessment, fetchAnalyticsOverview]);
 
   return (
     <div className="h-screen flex flex-col bg-gray-950 text-white">

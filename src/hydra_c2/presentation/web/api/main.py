@@ -11,6 +11,8 @@ Provides:
 
 from __future__ import annotations
 
+import math
+from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 from uuid import UUID
@@ -293,4 +295,292 @@ async def check_geofence(
         "position": {"lat": lat, "lon": lon},
         "breached": len(breaches) > 0,
         "geofences": breaches,
+    }
+
+
+# =============================================================================
+# Threat Assessment (Layer 5 — Panopticon-derived patterns)
+# =============================================================================
+
+
+# Key reference locations for threat scoring
+_CRITICAL_LOCATIONS = {
+    'SEOUL': (37.5665, 126.9780),
+    'PYONGYANG': (39.0392, 125.7625),
+    'BUSAN': (35.1796, 129.0756),
+    'DMZ_CENTER': (37.95, 126.85),
+    'NLL_WEST': (37.70, 124.80),
+    'OSAN_AB': (37.0901, 127.0297),  # US Air Base
+}
+
+
+def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Haversine distance in km (Panopticon utils.py pattern)."""
+    R = 6371.0
+    rlat1, rlon1, rlat2, rlon2 = map(math.radians, [lat1, lon1, lat2, lon2])
+    dlat = rlat2 - rlat1
+    dlon = rlon2 - rlon1
+    a = math.sin(dlat / 2) ** 2 + math.cos(rlat1) * math.cos(rlat2) * math.sin(dlon / 2) ** 2
+    return R * 2 * math.asin(math.sqrt(a))
+
+
+def _compute_threat_score(actor_data: dict) -> dict:
+    """Compute composite threat score using Panopticon engagement scoring pattern.
+
+    Score factors (Panopticon weaponEngagement.py):
+    - Affiliation weight: HOSTILE=1.0, UNKNOWN=0.5, NEUTRAL=0.1, FRIEND=0.0
+    - Proximity to critical assets: closer = higher threat
+    - Metadata threat_level: CRITICAL=1.0, HIGH=0.8, MEDIUM=0.5, LOW=0.2
+    - Actor type weight: SUBMARINE=1.0, VEHICLE(TEL)=0.95, AIRCRAFT=0.8, UNIT=0.6
+    """
+    AFFILIATION_WEIGHTS = {'HOSTILE': 1.0, 'UNKNOWN': 0.5, 'NEUTRAL': 0.1, 'FRIEND': 0.0, 'FRIENDLY': 0.0}
+    THREAT_LEVEL_MAP = {'CRITICAL': 1.0, 'HIGH': 0.8, 'MEDIUM': 0.5, 'LOW': 0.2}
+    TYPE_WEIGHTS = {
+        'SUBMARINE': 1.0, 'VEHICLE': 0.85, 'AIRCRAFT': 0.8,
+        'UNIT': 0.6, 'VESSEL': 0.7, 'UAV': 0.65,
+        'TRANSMISSION_SOURCE': 0.4, 'SENSOR': 0.2, 'PERSON': 0.3, 'UNKNOWN': 0.5,
+    }
+
+    affiliation = actor_data.get('affiliation', 'UNKNOWN')
+    aff_score = AFFILIATION_WEIGHTS.get(affiliation, 0.5)
+
+    meta = actor_data.get('metadata', {})
+    threat_lvl = meta.get('threat_level', meta.get('priority', 'LOW'))
+    threat_score = THREAT_LEVEL_MAP.get(threat_lvl.upper() if isinstance(threat_lvl, str) else 'LOW', 0.2)
+
+    actor_type = meta.get('actor_type', 'UNKNOWN')
+    # TEL gets max vehicle score
+    if 'TEL' in meta.get('assessed_type', ''):
+        type_score = 0.95
+    else:
+        type_score = TYPE_WEIGHTS.get(actor_type, 0.5)
+
+    # Proximity to Seoul (most critical)
+    pos = actor_data.get('position', {})
+    lat = pos.get('latitude', 37.5)
+    lon = pos.get('longitude', 127.0)
+    dist_seoul = _haversine_km(lat, lon, *_CRITICAL_LOCATIONS['SEOUL'])
+    # Normalize: 0km=1.0, 200km=0.0
+    proximity_score = max(0.0, 1.0 - dist_seoul / 200.0)
+
+    # Composite (Panopticon lethality formula adapted)
+    composite = (
+        aff_score * 0.30
+        + threat_score * 0.25
+        + type_score * 0.20
+        + proximity_score * 0.25
+    )
+
+    closest_asset = min(
+        _CRITICAL_LOCATIONS.items(),
+        key=lambda loc: _haversine_km(lat, lon, loc[1][0], loc[1][1]),
+    )
+
+    return {
+        'composite_score': round(composite, 3),
+        'affiliation_score': aff_score,
+        'threat_level_score': threat_score,
+        'type_score': type_score,
+        'proximity_score': round(proximity_score, 3),
+        'distance_to_seoul_km': round(dist_seoul, 1),
+        'closest_critical_asset': closest_asset[0],
+        'distance_to_closest_km': round(
+            _haversine_km(lat, lon, closest_asset[1][0], closest_asset[1][1]), 1
+        ),
+        'classification': (
+            'CRITICAL' if composite >= 0.8 else
+            'HIGH' if composite >= 0.6 else
+            'MEDIUM' if composite >= 0.4 else
+            'LOW'
+        ),
+    }
+
+
+@app.get('/api/v1/threat-assessment')
+async def threat_assessment() -> dict:
+    """Compute threat assessment for all actors (Panopticon engagement scoring)."""
+    container = get_container()
+    actors = await container.actor_repo.find_recent(200)
+    results = []
+    for a in actors:
+        actor_data = _actor_to_frontend(a)
+        score = _compute_threat_score(actor_data)
+        results.append({
+            'actor_id': actor_data['id'],
+            'name': actor_data['name'],
+            'affiliation': actor_data['affiliation'],
+            'domain': actor_data['domain'],
+            **score,
+        })
+    # Sort by composite score descending
+    results.sort(key=lambda x: x['composite_score'], reverse=True)
+    return {
+        'assessments': results,
+        'total': len(results),
+        'timestamp': datetime.now(timezone.utc).isoformat(),
+        'critical_count': sum(1 for r in results if r['classification'] == 'CRITICAL'),
+        'high_count': sum(1 for r in results if r['classification'] == 'HIGH'),
+    }
+
+
+# =============================================================================
+# Enhanced SDR Detections (Layer 0 — URH-derived signal processing model)
+# =============================================================================
+
+
+# URH Modulator.py modulation types
+SDR_MODULATION_TYPES = {
+    'ASK': 'Amplitude Shift Keying',
+    'FSK': 'Frequency Shift Keying',
+    'PSK': 'Phase Shift Keying',
+    'GFSK': 'Gaussian Frequency Shift Keying',
+    'OQPSK': 'Offset Quadrature Phase Shift Keying',
+    'QAM': 'Quadrature Amplitude Modulation',
+    'AM': 'Amplitude Modulation (analog)',
+    'FM': 'Frequency Modulation (analog)',
+    'CW': 'Continuous Wave',
+    'FHSS': 'Frequency Hopping Spread Spectrum',
+    'DSSS': 'Direct Sequence Spread Spectrum',
+    'UNKNOWN': 'Unknown modulation',
+}
+
+# URH FieldType.py protocol field classification
+PROTOCOL_FIELD_TYPES = [
+    'PREAMBLE', 'SYNC', 'LENGTH', 'SRC_ADDRESS', 'DST_ADDRESS',
+    'SEQUENCE_NUMBER', 'TYPE', 'DATA', 'CHECKSUM', 'CUSTOM',
+]
+
+# Military frequency bands relevant to Korean Peninsula ops
+MIL_FREQ_BANDS = {
+    'HF': {'min_mhz': 3.0, 'max_mhz': 30.0, 'usage': 'Long-range military comms'},
+    'VHF_LOW': {'min_mhz': 30.0, 'max_mhz': 88.0, 'usage': 'Tactical ground comms'},
+    'VHF_AIR': {'min_mhz': 108.0, 'max_mhz': 137.0, 'usage': 'Aviation VHF'},
+    'UHF_MIL': {'min_mhz': 225.0, 'max_mhz': 400.0, 'usage': 'Military UHF / SATCOM'},
+    'L_BAND': {'min_mhz': 1000.0, 'max_mhz': 2000.0, 'usage': 'GPS / Radar / ADS-B'},
+    'S_BAND': {'min_mhz': 2000.0, 'max_mhz': 4000.0, 'usage': 'Radar / WiFi'},
+    'C_BAND': {'min_mhz': 4000.0, 'max_mhz': 8000.0, 'usage': 'SATCOM / Radar'},
+    'X_BAND': {'min_mhz': 8000.0, 'max_mhz': 12000.0, 'usage': 'Fire control radar'},
+}
+
+
+def _classify_freq_band(freq_mhz: float) -> str:
+    """Classify frequency into military band (URH signal analysis pattern)."""
+    for band_name, band_info in MIL_FREQ_BANDS.items():
+        if band_info['min_mhz'] <= freq_mhz <= band_info['max_mhz']:
+            return band_name
+    return 'OTHER'
+
+
+@app.get('/api/v1/sdr/reference')
+async def sdr_reference() -> dict:
+    """Reference data for SDR analysis (URH-derived modulation/protocol models)."""
+    return {
+        'modulation_types': SDR_MODULATION_TYPES,
+        'protocol_field_types': PROTOCOL_FIELD_TYPES,
+        'military_frequency_bands': MIL_FREQ_BANDS,
+    }
+
+
+# =============================================================================
+# Analytics & Fusion (Layer 5 — Panopticon sensor fusion pattern)
+# =============================================================================
+
+
+@app.get('/api/v1/analytics/overview')
+async def analytics_overview() -> dict:
+    """COP analytics overview — force composition, threat summary, coverage."""
+    container = get_container()
+    actors = await container.actor_repo.find_recent(200)
+
+    by_affiliation: dict[str, int] = {}
+    by_domain: dict[str, int] = {}
+    by_type: dict[str, int] = {}
+    threat_actors = []
+
+    for a in actors:
+        aff = AFFILIATION_MAP.get(a.affiliation.value, 'UNKNOWN')
+        dom = ACTOR_TYPE_TO_DOMAIN.get(a.actor_type.value, 'LAND')
+        atype = a.actor_type.value
+
+        by_affiliation[aff] = by_affiliation.get(aff, 0) + 1
+        by_domain[dom] = by_domain.get(dom, 0) + 1
+        by_type[atype] = by_type.get(atype, 0) + 1
+
+        if aff in ('HOSTILE', 'UNKNOWN'):
+            actor_data = _actor_to_frontend(a)
+            score = _compute_threat_score(actor_data)
+            threat_actors.append({
+                'name': a.callsign,
+                'classification': score['classification'],
+                'composite_score': score['composite_score'],
+            })
+
+    threat_actors.sort(key=lambda x: x['composite_score'], reverse=True)
+
+    return {
+        'total_tracks': len(actors),
+        'by_affiliation': by_affiliation,
+        'by_domain': by_domain,
+        'by_type': by_type,
+        'top_threats': threat_actors[:10],
+        'force_ratio': {
+            'friendly': by_affiliation.get('FRIEND', 0),
+            'hostile': by_affiliation.get('HOSTILE', 0),
+            'ratio': round(
+                by_affiliation.get('FRIEND', 1) / max(by_affiliation.get('HOSTILE', 1), 1), 2
+            ),
+        },
+        'timestamp': datetime.now(timezone.utc).isoformat(),
+    }
+
+
+@app.get('/api/v1/analytics/distance-matrix')
+async def distance_matrix(
+    affiliation: str = Query('HOSTILE', description='Filter actors by affiliation'),
+    target_lat: float = Query(37.5665, description='Target latitude (default: Seoul)'),
+    target_lon: float = Query(126.978, description='Target longitude (default: Seoul)'),
+) -> dict:
+    """Distance matrix from filtered actors to target (Panopticon pursuit pattern)."""
+    container = get_container()
+    actors = await container.actor_repo.find_recent(200)
+
+    distances = []
+    for a in actors:
+        aff = AFFILIATION_MAP.get(a.affiliation.value, 'UNKNOWN')
+        if aff != affiliation:
+            continue
+        if a.position is None:
+            continue
+
+        dist_km = _haversine_km(
+            a.position.latitude, a.position.longitude, target_lat, target_lon
+        )
+        bearing = math.degrees(
+            math.atan2(
+                math.sin(math.radians(target_lon - a.position.longitude)) * math.cos(math.radians(target_lat)),
+                math.cos(math.radians(a.position.latitude)) * math.sin(math.radians(target_lat))
+                - math.sin(math.radians(a.position.latitude)) * math.cos(math.radians(target_lat))
+                * math.cos(math.radians(target_lon - a.position.longitude)),
+            )
+        ) % 360
+
+        distances.append({
+            'actor_id': str(a.id),
+            'name': a.callsign,
+            'domain': ACTOR_TYPE_TO_DOMAIN.get(a.actor_type.value, 'LAND'),
+            'distance_km': round(dist_km, 1),
+            'bearing_deg': round(bearing, 1),
+            'position': {
+                'latitude': a.position.latitude,
+                'longitude': a.position.longitude,
+            },
+        })
+
+    distances.sort(key=lambda x: x['distance_km'])
+    return {
+        'target': {'latitude': target_lat, 'longitude': target_lon},
+        'affiliation_filter': affiliation,
+        'distances': distances,
+        'total': len(distances),
+        'closest': distances[0] if distances else None,
     }

@@ -14,6 +14,8 @@ export const ENDPOINTS = {
   actors: `${API_BASE_URL}/api/v1/actors`,
   actorById: (id: string) => `${API_BASE_URL}/api/v1/actors/${id}`,
   actorNetwork: (id: string) => `${API_BASE_URL}/api/v1/actors/${id}/network`,
+  threatAssessment: `${API_BASE_URL}/api/v1/threat-assessment`,
+  analyticsOverview: `${API_BASE_URL}/api/v1/analytics/overview`,
   cotIngest: `${API_BASE_URL}/api/v1/cot/ingest`,
   sdrDetections: `${API_BASE_URL}/api/v1/sdr/detections`,
   geofences: `${API_BASE_URL}/api/v1/geofences`,
@@ -21,7 +23,7 @@ export const ENDPOINTS = {
 } as const;
 
 /** Polling interval in milliseconds for real-time updates */
-export const POLL_INTERVAL_MS = 3_000;
+export const POLL_INTERVAL_MS = 5_000;
 
 /** Connection timeout in milliseconds */
 export const FETCH_TIMEOUT_MS = 8_000;

@@ -89,6 +89,18 @@
   }
 }
 
+@keyframes threat-critical-pulse {
+  0%,
+  100% {
+    text-shadow: 0 0 2px rgb(255 68 68 / 0.55);
+    opacity: 0.9;
+  }
+  50% {
+    text-shadow: 0 0 8px rgb(255 68 68 / 0.95);
+    opacity: 1;
+  }
+}
+
 .scanline-overlay {
   position: absolute;
   inset: 0;
@@ -156,4 +168,57 @@
 
 .dmz-zone {
   filter: drop-shadow(0 0 5px rgb(255 120 73 / 0.2));
+}
+
+.threat-critical {
+  color: #ff4444;
+  animation: threat-critical-pulse 1.2s ease-in-out infinite;
+}
+
+.threat-high {
+  color: #ff8800;
+}
+
+.threat-medium {
+  color: #ffcc00;
+}
+
+.threat-low {
+  color: #44ff44;
+}
+
+.threat-score-track {
+  position: relative;
+  height: 5px;
+  width: 100%;
+  border-radius: 999px;
+  background: rgb(31 41 55 / 0.9);
+  overflow: hidden;
+  border: 1px solid rgb(55 65 81 / 0.85);
+}
+
+.threat-score-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 240ms ease;
+  background: currentcolor;
+  box-shadow: 0 0 6px rgb(255 255 255 / 0.18);
+}
+
+.force-ratio-box {
+  border: 1px solid rgb(239 68 68 / 0.35);
+  background: linear-gradient(135deg, rgb(127 29 29 / 0.22), rgb(31 41 55 / 0.45));
+  border-radius: 6px;
+  padding: 6px 8px;
+  min-width: 92px;
+  text-align: right;
+}
+
+.force-ratio-value {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: #ffb4b4;
+  letter-spacing: 0.03em;
+  font-size: 14px;
+  line-height: 1.1;
+  font-weight: 700;
 }

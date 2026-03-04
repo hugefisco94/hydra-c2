@@ -42,6 +42,34 @@ export interface ActorsResponse {
   total: number;
 }
 
+export interface ThreatAssessmentItem {
+  actor_id: string;
+  name: string;
+  affiliation: string;
+  domain: string;
+  composite_score: number;
+  classification: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+  distance_to_seoul_km: number;
+  closest_critical_asset: string;
+}
+
+export interface ThreatAssessment {
+  assessments: ThreatAssessmentItem[];
+  total: number;
+  critical_count: number;
+  high_count: number;
+  timestamp: string;
+}
+
+export interface AnalyticsOverview {
+  total_tracks: number;
+  by_affiliation: Record<string, number>;
+  by_domain: Record<string, number>;
+  force_ratio: { friendly: number; hostile: number; ratio: number };
+  top_threats: Array<{ name: string; classification: string; composite_score: number }>;
+  timestamp: string;
+}
+
 /** Affiliation color mapping for UI */
 export const AFFILIATION_COLORS: Record<Affiliation, string> = {
   FRIEND: '#3b82f6',

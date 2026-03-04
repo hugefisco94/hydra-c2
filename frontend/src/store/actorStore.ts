@@ -3,7 +3,13 @@
  */
 
 import { create } from 'zustand';
-import type { Actor, HealthStatus } from '../types';
+import { ENDPOINTS, apiFetch } from '../config/api';
+import type {
+  Actor,
+  AnalyticsOverview,
+  HealthStatus,
+  ThreatAssessment,
+} from '../types';
 
 export type ConnectionState = 'connecting' | 'connected' | 'disconnected';
 
@@ -21,6 +27,8 @@ interface ActorState {
   actors: Actor[];
   selectedActor: Actor | null;
   health: HealthStatus | null;
+  threatAssessment: ThreatAssessment | null;
+  analyticsOverview: AnalyticsOverview | null;
   connectionState: ConnectionState;
 
   // UI
@@ -32,6 +40,8 @@ interface ActorState {
   selectActor: (actor: Actor | null) => void;
   setHealth: (health: HealthStatus) => void;
   setConnectionState: (state: ConnectionState) => void;
+  fetchThreatAssessment: () => Promise<void>;
+  fetchAnalyticsOverview: () => Promise<void>;
   toggleSidebar: () => void;
   toggleDomainFilter: (domain: keyof DomainFilter) => void;
 }
@@ -41,6 +51,8 @@ export const useActorStore = create<ActorState>((set) => ({
   actors: [],
   selectedActor: null,
   health: null,
+  threatAssessment: null,
+  analyticsOverview: null,
   connectionState: 'connecting',
   sidebarOpen: true,
   domainFilters: {
@@ -60,6 +72,20 @@ export const useActorStore = create<ActorState>((set) => ({
   setHealth: (health) => set({ health }),
 
   setConnectionState: (connectionState) => set({ connectionState }),
+
+  fetchThreatAssessment: async () => {
+    try {
+      const threatAssessment = await apiFetch<ThreatAssessment>(ENDPOINTS.threatAssessment);
+      set({ threatAssessment });
+    } catch {}
+  },
+
+  fetchAnalyticsOverview: async () => {
+    try {
+      const analyticsOverview = await apiFetch<AnalyticsOverview>(ENDPOINTS.analyticsOverview);
+      set({ analyticsOverview });
+    } catch {}
+  },
 
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
 
