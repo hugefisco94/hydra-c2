@@ -135,6 +135,28 @@ class PostGISActorRepository(ActorRepository):
             return None
         return self._actor_from_row(row)
 
+    async def find_recent(self, limit: int = 100) -> Sequence[Actor]:
+        subq = (
+            select(ActorModel.actor_id, func.max(ActorModel.recorded_at).label('max_time'))
+            .group_by(ActorModel.actor_id)
+            .subquery()
+        )
+        stmt = (
+            select(
+                ActorModel,
+                func.ST_Y(ActorModel.geom).label('latitude'),
+                func.ST_X(ActorModel.geom).label('longitude'),
+                func.ST_Z(ActorModel.geom).label('altitude'),
+            )
+            .join(subq, and_(ActorModel.actor_id == subq.c.actor_id, ActorModel.recorded_at == subq.c.max_time))
+            .order_by(ActorModel.recorded_at.desc())
+            .limit(limit)
+        )
+        async with self._session_factory() as session:
+            result = await session.execute(stmt)
+            rows = result.all()
+        return [self._actor_from_row(row) for row in rows]
+
     async def find_within_radius(self, center: GeoPosition, radius_meters: float) -> Sequence[Actor]:
         center_point = func.ST_SetSRID(func.ST_MakePoint(center.longitude, center.latitude), 4326)
         spatial_filter = func.ST_DWithin(
@@ -476,6 +498,24 @@ class PostGISTransmissionRepository(TransmissionRepository):
                 )
             )
             .order_by(EventModel.detected_at.desc())
+        )
+        async with self._session_factory() as session:
+            result = await session.execute(stmt)
+            rows = result.all()
+
+        return [self._transmission_from_row(row) for row in rows]
+
+    async def find_recent(self, limit: int = 100) -> Sequence[Transmission]:
+        """Get most recently detected transmissions."""
+        stmt = (
+            select(
+                EventModel,
+                func.ST_Y(EventModel.target_geom).label("latitude"),
+                func.ST_X(EventModel.target_geom).label("longitude"),
+            )
+            .where(EventModel.det_type == "TRANSMISSION")
+            .order_by(EventModel.detected_at.desc())
+            .limit(limit)
         )
         async with self._session_factory() as session:
             result = await session.execute(stmt)

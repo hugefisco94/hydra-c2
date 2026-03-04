@@ -131,11 +131,45 @@ async def ingest_cot(cot_xml: str = Body(..., media_type="application/xml")) -> 
 # =============================================================================
 
 
-@app.get("/api/v1/actors")
+# --- Frontend-compatible response helpers ---
+
+ACTOR_TYPE_TO_DOMAIN = {
+    'PERSON': 'LAND', 'VEHICLE': 'LAND', 'UNIT': 'LAND', 'EQUIPMENT': 'LAND',
+    'AIRCRAFT': 'AIR', 'UAV': 'AIR',
+    'VESSEL': 'SEA',
+    'TRANSMISSION_SOURCE': 'CYBER',
+    'UNKNOWN': 'LAND',
+}
+
+AFFILIATION_MAP = {
+    'FRIENDLY': 'FRIEND', 'HOSTILE': 'HOSTILE',
+    'NEUTRAL': 'NEUTRAL', 'UNKNOWN': 'UNKNOWN',
+}
+
+
+def _actor_to_frontend(a) -> dict:
+    return {
+        'id': str(a.id),
+        'name': a.callsign,
+        'sidc': a.mil_std_2525b_sidc,
+        'affiliation': AFFILIATION_MAP.get(a.affiliation.value, 'UNKNOWN'),
+        'domain': ACTOR_TYPE_TO_DOMAIN.get(a.actor_type.value, 'LAND'),
+        'position': {
+            'latitude': a.position.latitude,
+            'longitude': a.position.longitude,
+            'altitude': a.position.altitude_m,
+        } if a.position else None,
+        'last_seen': a.last_seen.isoformat(),
+        'source': a.source,
+        'metadata': a.metadata,
+    }
+
+
+@app.get('/api/v1/actors')
 async def list_actors(
-    lat: float | None = Query(None, description="Center latitude for spatial query"),
-    lon: float | None = Query(None, description="Center longitude for spatial query"),
-    radius_m: float = Query(10000, description="Search radius in meters"),
+    lat: float | None = Query(None, description='Center latitude for spatial query'),
+    lon: float | None = Query(None, description='Center longitude for spatial query'),
+    radius_m: float = Query(10000, description='Search radius in meters'),
     limit: int = Query(100, ge=1, le=1000),
 ) -> dict:
     """List actors, optionally filtered by spatial proximity."""
@@ -145,30 +179,11 @@ async def list_actors(
         center = GeoPosition(latitude=lat, longitude=lon)
         actors = await container.actor_repo.find_within_radius(center, radius_m)
     else:
-        # Return recent actors (fallback — no spatial filter)
-        actors = []
+        actors = await container.actor_repo.find_recent(limit)
 
     return {
-        "actors": [
-            {
-                "id": str(a.id),
-                "callsign": a.callsign,
-                "type": a.actor_type.value,
-                "affiliation": a.affiliation.value,
-                "position": {
-                    "lat": a.position.latitude,
-                    "lon": a.position.longitude,
-                    "alt_m": a.position.altitude_m,
-                }
-                if a.position
-                else None,
-                "source": a.source,
-                "last_seen": a.last_seen.isoformat(),
-                "sidc": a.mil_std_2525b_sidc,
-            }
-            for a in actors
-        ],
-        "total": len(actors),
+        'actors': [_actor_to_frontend(a) for a in actors],
+        'total': len(actors),
     }
 
 
@@ -222,7 +237,7 @@ async def list_sdr_detections(
     if freq_mhz is not None:
         transmissions = await container.transmission_repo.find_by_frequency(freq_mhz)
     else:
-        transmissions = []
+        transmissions = await container.transmission_repo.find_recent(limit)
 
     return {
         "detections": [

@@ -40,6 +40,10 @@ class ActorRepository(ABC):
         ...
 
     @abstractmethod
+    async def find_recent(self, limit: int = 100) -> Sequence[Actor]:
+        """Get most recently seen actors (latest position per actor)."""
+        ...
+    @abstractmethod
     async def find_co_located(
         self, actor_id: UUID, time_window_seconds: int = 7200, distance_meters: float = 100.0
     ) -> Sequence[Actor]:
@@ -100,6 +104,11 @@ class TransmissionRepository(ABC):
         self, freq_mhz: float, time_window_seconds: int = 300
     ) -> Sequence[Transmission]:
         """Find bearing data suitable for triangulation (KrakenSDR multi-station)."""
+        ...
+
+    @abstractmethod
+    async def find_recent(self, limit: int = 100) -> Sequence[Transmission]:
+        """Get most recently detected transmissions."""
         ...
 
 
