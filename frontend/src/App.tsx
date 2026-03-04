@@ -59,11 +59,12 @@ function App() {
           >
             ☰
           </button>
-          <h1 className="text-lg font-bold tracking-tight text-white">
-            HYDRA-C2
+          <h1 className="text-lg font-bold tracking-tight">
+            <span style={{ color: '#39ff14' }}>HYDRA</span>
+            <span className="text-white">-C2</span>
           </h1>
-          <span className="text-xs text-gray-500 hidden sm:inline">
-            Common Operating Picture
+          <span className="text-xs text-gray-500 hidden sm:inline font-mono tracking-widest">
+            MULTI-DOMAIN C2 // COP
           </span>
         </div>
         <SystemHealth />
