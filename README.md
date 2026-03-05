@@ -47,6 +47,10 @@
  [●] POSTGIS SPATIAL   CONNECTED     ████████████████████  GEOFENCE
  [●] NEO4J GRAPH       CONNECTED     ████████████████████  LINK-ANAL
  [●] HTTPS PROXY       OPERATIONAL   ████████████████████  CADDY/SSL
+ [●] L0 KRAKENSDR      OPERATIONAL   ████████████████████  DOA/TDOA
+ [●] L1 TAK CLIENT     OPERATIONAL   ████████████████████  TCP/UDP CoT
+ [●] L2 MESHTASTIC     OPERATIONAL   ████████████████████  LoRa MESH
+ [●] L5 ML ANALYTICS   OPERATIONAL   ████████████████████  THREAT AI
  ────────────────────────────────────────────────────────────────────
 ```
 
