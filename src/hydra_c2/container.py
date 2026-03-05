@@ -58,6 +58,16 @@ class Container:
     # L5 – ML Analytics Engine
     _ml_engine: Optional[Any] = field(default=None, init=False)
 
+    # L3 – Intelligence Retrieval (ColBERT MaxSim + OSINT + Kill Web Fusion)
+    _intel_retriever: Optional[Any] = field(default=None, init=False)
+    _intel_collector: Optional[Any] = field(default=None, init=False)
+    _intel_fusion: Optional[Any] = field(default=None, init=False)
+    # L4 – OODA Decision Engine (Boyd Loop + In-Context Co-player Inference)
+    _co_player_engine: Optional[Any] = field(default=None, init=False)
+    _ooda_engine: Optional[Any] = field(default=None, init=False)
+    # L6 – Harness Orchestration (Utah/Inngest think → act → observe)
+    _harness: Optional[Any] = field(default=None, init=False)
+
     async def startup(self) -> None:
         """Initialize all infrastructure connections."""
         logger.info("container_starting", app=self.settings.app_name)
@@ -146,6 +156,34 @@ class Container:
         await self._ml_engine.start()
         logger.info("ml_analytics_initialized")
 
+        # --- L3: Intelligence Retrieval (ColBERT MaxSim + OSINT) ---
+        from hydra_c2.infrastructure.intelligence import create_intelligence_layer
+
+        (
+            self._intel_retriever,
+            self._intel_collector,
+            self._intel_fusion,
+        ) = create_intelligence_layer()
+        logger.info("intelligence_layer_initialized")
+
+        # --- L4: OODA Decision Engine (Boyd Loop + Co-player Inference) ---
+        from hydra_c2.infrastructure.ooda import create_ooda_layer
+
+        self._co_player_engine, self._ooda_engine = create_ooda_layer(
+            collector=self._intel_collector,
+            fusion=self._intel_fusion,
+        )
+        logger.info("ooda_engine_initialized")
+
+        # --- L6: Harness Orchestration (Utah/Inngest think → act → observe) ---
+        from hydra_c2.infrastructure.harness import create_harness_layer
+
+        self._harness = create_harness_layer(
+            ooda_engine=self._ooda_engine,
+            max_iterations=getattr(self.settings, "harness_max_iterations", 50),
+        )
+        logger.info("harness_initialized")
+
         logger.info("container_started")
 
     async def shutdown(self) -> None:
@@ -226,6 +264,36 @@ class Container:
     def ml_engine(self) -> Any:
         assert self._ml_engine is not None, "Container not started"
         return self._ml_engine
+
+    @property
+    def intel_collector(self) -> Any:
+        """L3: OSINT intelligence collector (ColBERT MaxSim index)."""
+        assert self._intel_collector is not None, "Container not started"
+        return self._intel_collector
+
+    @property
+    def intel_fusion(self) -> Any:
+        """L3: Kill Web intelligence fusion (multi-source confidence aggregation)."""
+        assert self._intel_fusion is not None, "Container not started"
+        return self._intel_fusion
+
+    @property
+    def ooda_engine(self) -> Any:
+        """L4: OODA decision engine (Boyd Loop + in-context co-player inference)."""
+        assert self._ooda_engine is not None, "Container not started"
+        return self._ooda_engine
+
+    @property
+    def co_player_engine(self) -> Any:
+        """L4: In-context co-player inference engine (arXiv:2602.16301)."""
+        assert self._co_player_engine is not None, "Container not started"
+        return self._co_player_engine
+
+    @property
+    def harness(self) -> Any:
+        """L6: Utah/Inngest harness orchestration (think → act → observe)."""
+        assert self._harness is not None, "Container not started"
+        return self._harness
 
     # --- Use case factories ---
 

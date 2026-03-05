@@ -29,3 +29,4 @@ Thumbs.db
 
 # Reference repositories (cloned for analysis)
 _refs/
+.omc/
