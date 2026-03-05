@@ -6,7 +6,7 @@ import { useMemo } from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import type { Actor } from '../../types';
 import { AFFILIATION_COLORS, DOMAIN_LABELS } from '../../types';
-import { createMilSymbolIcon } from '../../lib/milsymbol';
+import { createMilSymbolIcon, resolveActorSidc } from '../../lib/milsymbol';
 import { useActorStore } from '../../store/actorStore';
 
 interface Props {
@@ -16,9 +16,11 @@ interface Props {
 export function ActorMarker({ actor }: Props) {
   const selectActor = useActorStore((s) => s.selectActor);
 
+  const resolvedSidc = useMemo(() => resolveActorSidc(actor), [actor]);
+
   const icon = useMemo(
-    () => createMilSymbolIcon(actor.sidc, { size: 32 }),
-    [actor.sidc],
+    () => createMilSymbolIcon(resolvedSidc, { size: 32 }),
+    [resolvedSidc],
   );
 
   const affiliationColor = AFFILIATION_COLORS[actor.affiliation] ?? '#888';
@@ -46,7 +48,7 @@ export function ActorMarker({ actor }: Props) {
             </span>
           </div>
           <div className="text-xs text-gray-500 font-mono">
-            SIDC: {actor.sidc}
+            SIDC: {resolvedSidc}
           </div>
           <div className="text-xs text-gray-500">
             {actor.position.latitude.toFixed(4)}°N,{' '}

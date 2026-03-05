@@ -3,7 +3,7 @@
  */
 
 import { useActorStore } from '../../store/actorStore';
-import { createMilSymbolSvg } from '../../lib/milsymbol';
+import { createMilSymbolSvg, resolveActorSidc } from '../../lib/milsymbol';
 import { AFFILIATION_COLORS, DOMAIN_LABELS } from '../../types';
 
 export function ActorPanel() {
@@ -12,7 +12,8 @@ export function ActorPanel() {
 
   if (!selectedActor) return null;
 
-  const svgString = createMilSymbolSvg(selectedActor.sidc, 80);
+  const resolvedSidc = resolveActorSidc(selectedActor);
+  const svgString = createMilSymbolSvg(resolvedSidc, 80);
   const color = AFFILIATION_COLORS[selectedActor.affiliation] ?? '#888';
 
   return (
@@ -55,7 +56,7 @@ export function ActorPanel() {
         {/* Info Grid */}
         <div className="grid grid-cols-2 gap-3 text-sm">
           <InfoField label="ID" value={selectedActor.id} mono />
-          <InfoField label="SIDC" value={selectedActor.sidc} mono />
+          <InfoField label="SIDC" value={resolvedSidc} mono />
           <InfoField
             label="Latitude"
             value={selectedActor.position.latitude.toFixed(6)}

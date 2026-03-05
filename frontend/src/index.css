@@ -59,3 +59,166 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #4b5563;
 }
+
+@keyframes scanline {
+  from {
+    top: -100%;
+  }
+  to {
+    top: 100%;
+  }
+}
+
+@keyframes threat-pulse {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes live-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@keyframes threat-critical-pulse {
+  0%,
+  100% {
+    text-shadow: 0 0 2px rgb(255 68 68 / 0.55);
+    opacity: 0.9;
+  }
+  50% {
+    text-shadow: 0 0 8px rgb(255 68 68 / 0.95);
+    opacity: 1;
+  }
+}
+
+.scanline-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 450;
+  overflow: hidden;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgb(62 255 96 / 0.035) 0,
+    rgb(62 255 96 / 0.035) 1px,
+    transparent 1px,
+    transparent 4px
+  );
+}
+
+.scanline-sweep {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 36%;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgb(65 255 134 / 0.04) 40%,
+    rgb(126 255 171 / 0.14) 52%,
+    rgb(65 255 134 / 0.04) 64%,
+    transparent 100%
+  );
+  animation: scanline 5.2s linear infinite;
+}
+
+.threat-ring {
+  filter: drop-shadow(0 0 6px rgb(255 80 80 / 0.35));
+}
+
+.threat-ring--pulse {
+  animation: threat-pulse 2.4s ease-in-out infinite;
+}
+
+.live-blink {
+  animation: live-blink 1.4s ease-in-out infinite;
+}
+
+.leaflet-control-layers {
+  background: rgb(17 24 39 / 0.92) !important;
+  color: #e5e7eb;
+  border: 1px solid #374151 !important;
+  box-shadow: 0 8px 20px rgb(0 0 0 / 0.5) !important;
+}
+
+.leaflet-control-layers-toggle {
+  background-color: #111827 !important;
+}
+
+.leaflet-control-layers-expanded {
+  padding: 8px 10px;
+}
+
+.leaflet-control-layers label {
+  color: #d1d5db;
+  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  letter-spacing: 0.04em;
+}
+
+.dmz-zone {
+  filter: drop-shadow(0 0 5px rgb(255 120 73 / 0.2));
+}
+
+.threat-critical {
+  color: #ff4444;
+  animation: threat-critical-pulse 1.2s ease-in-out infinite;
+}
+
+.threat-high {
+  color: #ff8800;
+}
+
+.threat-medium {
+  color: #ffcc00;
+}
+
+.threat-low {
+  color: #44ff44;
+}
+
+.threat-score-track {
+  position: relative;
+  height: 5px;
+  width: 100%;
+  border-radius: 999px;
+  background: rgb(31 41 55 / 0.9);
+  overflow: hidden;
+  border: 1px solid rgb(55 65 81 / 0.85);
+}
+
+.threat-score-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 240ms ease;
+  background: currentcolor;
+  box-shadow: 0 0 6px rgb(255 255 255 / 0.18);
+}
+
+.force-ratio-box {
+  border: 1px solid rgb(239 68 68 / 0.35);
+  background: linear-gradient(135deg, rgb(127 29 29 / 0.22), rgb(31 41 55 / 0.45));
+  border-radius: 6px;
+  padding: 6px 8px;
+  min-width: 92px;
+  text-align: right;
+}
+
+.force-ratio-value {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: #ffb4b4;
+  letter-spacing: 0.03em;
+  font-size: 14px;
+  line-height: 1.1;
+  font-weight: 700;
+}

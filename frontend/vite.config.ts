@@ -8,14 +8,10 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://134.199.207.172:8080',
+        target: 'https://134-199-207-172.sslip.io',
         changeOrigin: true,
+        secure: true,
       },
     },
-  },
-  define: {
-    __API_BASE_URL__: JSON.stringify(
-      process.env.VITE_API_BASE_URL ?? 'http://134.199.207.172:8080'
-    ),
   },
 })

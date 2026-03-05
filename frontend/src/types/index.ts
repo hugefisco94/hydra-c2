@@ -42,6 +42,75 @@ export interface ActorsResponse {
   total: number;
 }
 
+export interface ThreatAssessmentItem {
+  actor_id: string;
+  name: string;
+  affiliation: string;
+  domain: string;
+  composite_score: number;
+  classification: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+  distance_to_tehran_km: number;
+  closest_critical_asset: string;
+}
+
+export interface ThreatAssessment {
+  assessments: ThreatAssessmentItem[];
+  total: number;
+  critical_count: number;
+  high_count: number;
+  timestamp: string;
+}
+
+export interface AnalyticsOverview {
+  total_tracks: number;
+  by_affiliation: Record<string, number>;
+  by_domain: Record<string, number>;
+  force_ratio: { friendly: number; hostile: number; ratio: number };
+  top_threats: Array<{ name: string; classification: string; composite_score: number }>;
+  timestamp: string;
+}
+/** OSINT event from GDELT or OpenSky feeds */
+export interface OsintEvent {
+  id: string;
+  source: 'GDELT' | 'OPENSKY';
+  event_type: string;
+  title: string;
+  timestamp: string;
+  location?: { lat: number; lon: number };
+  relevance_score: number;
+  metadata?: Record<string, unknown>;
+}
+
+/** Aggregated OSINT feed response */
+export interface OsintFeedsResponse {
+  source: string;
+  events: OsintEvent[];
+  breakdown: Record<string, number>;
+  timestamp: string;
+}
+
+/** Bayesian causal DAG threat assessment */
+export interface CausalAssessment {
+  threat_level: 'CRITICAL' | 'HIGH' | 'ELEVATED' | 'LOW' | 'MINIMAL';
+  composite_score: number;
+  escalation_probability: number;
+  military_posture_index: number;
+  causal_factors: {
+    gdelt_tone_avg: number;
+    aircraft_density: number;
+    escalation_node: number;
+    posture_node: number;
+  };
+  evidence_summary: {
+    gdelt_articles: number;
+    military_flights: number;
+    assessment_basis: string;
+  };
+  timestamp: string;
+}
+
+export type ThreatLevel = CausalAssessment['threat_level'];
+
 /** Affiliation color mapping for UI */
 export const AFFILIATION_COLORS: Record<Affiliation, string> = {
   FRIEND: '#3b82f6',
@@ -58,4 +127,13 @@ export const DOMAIN_LABELS: Record<Domain, string> = {
   SUBSURFACE: '🔽',
   SPACE: '🛰️',
   CYBER: '💻',
+};
+
+/** Threat level color mapping for Bayesian assessment UI */
+export const THREAT_LEVEL_COLORS: Record<string, string> = {
+  CRITICAL: '#ef4444',
+  HIGH: '#f97316',
+  ELEVATED: '#eab308',
+  LOW: '#22c55e',
+  MINIMAL: '#6b7280',
 };

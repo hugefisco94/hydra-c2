@@ -5,6 +5,7 @@
 
 import ms from 'milsymbol';
 import L from 'leaflet';
+import type { Actor } from '../types';
 
 export interface MilSymbolOptions {
   size?: number;
@@ -49,6 +50,15 @@ export function createMilSymbolSvg(sidc: string, size = 64): string {
  * Format: S[Affiliation][Battle Dimension][Function ID]
  */
 export const DEFAULT_SIDCS: Record<string, string> = {
+  TYPE_FRIEND_AIR_AIRCRAFT: 'SFAPMF-----K',
+  TYPE_FRIEND_AIR_UAV: 'SFAPMFQ----K',
+  TYPE_FRIEND_LAND_VEHICLE: 'SFGPUCA----K',
+  TYPE_FRIEND_SEA_VESSEL: 'SFSPCLCC---K',
+  TYPE_HOSTILE_LAND_UNIT: 'SHGPUCI----K',
+  TYPE_HOSTILE_AIR_AIRCRAFT: 'SHAPMF-----K',
+  TYPE_NEUTRAL_AIR_AIRCRAFT: 'SNAPMF-----K',
+  TYPE_UNKNOWN_LAND_UNIT: 'SUGPUCI----K',
+  CYBER: 'SFGPEWRH---K',
   // Friendly
   FRIEND_LAND_UNIT: 'SFGPUCI----K',
   FRIEND_LAND_ARMOR: 'SFGPUCA----K',
@@ -70,9 +80,72 @@ export const DEFAULT_SIDCS: Record<string, string> = {
 /**
  * Get a fallback SIDC based on affiliation + domain
  */
-export function getDefaultSidc(affiliation: string, domain: string): string {
-  const key = `${affiliation}_${domain}`;
+export function getDefaultSidc(
+  affiliation: string,
+  domain: string,
+  actorType?: string,
+): string {
+  const normalizedAffiliation = normalizeAffiliation(affiliation);
+  const normalizedDomain = domain.toUpperCase();
+  const normalizedActorType = actorType?.toUpperCase();
+
+  if (normalizedDomain === 'CYBER') {
+    return DEFAULT_SIDCS.CYBER;
+  }
+
+  if (normalizedActorType) {
+    const typedKey = `TYPE_${normalizedAffiliation}_${normalizedDomain}_${normalizedActorType}`;
+    if (typedKey in DEFAULT_SIDCS) return DEFAULT_SIDCS[typedKey];
+  }
+
+  const key = `${normalizedAffiliation}_${normalizedDomain}`;
   if (key in DEFAULT_SIDCS) return DEFAULT_SIDCS[key];
+
+  if (normalizedAffiliation === 'UNKNOWN' && normalizedDomain === 'LAND') {
+    return DEFAULT_SIDCS.UNKNOWN_LAND_UNIT;
+  }
+
   // Fallback: unknown ground unit
   return 'SUGPU------K';
+}
+
+export function isGenericSidc(sidc: string): boolean {
+  const normalized = sidc.trim().toUpperCase();
+  return [
+    'SFGP------',
+    'SHGP------',
+    'SNGP------',
+    'SUGP------',
+    'SFGP------K',
+    'SHGP------K',
+    'SNGP------K',
+    'SUGP------K',
+  ].includes(normalized);
+}
+
+export function resolveActorSidc(actor: Actor): string {
+  const incomingSidc = actor.sidc?.trim() ?? '';
+  if (incomingSidc && !isGenericSidc(incomingSidc)) {
+    return incomingSidc;
+  }
+
+  const actorType = extractActorType(actor);
+  return getDefaultSidc(actor.affiliation, actor.domain, actorType);
+}
+
+function extractActorType(actor: Actor): string | undefined {
+  const metadataActorType = actor.metadata?.actor_type;
+  if (typeof metadataActorType === 'string' && metadataActorType.length > 0) {
+    return metadataActorType;
+  }
+  return undefined;
+}
+
+function normalizeAffiliation(affiliation: string): string {
+  const normalized = affiliation.trim().toUpperCase();
+  if (normalized === 'FRIENDLY') return 'FRIEND';
+  if (normalized === 'HOSTILE') return 'HOSTILE';
+  if (normalized === 'NEUTRAL') return 'NEUTRAL';
+  if (normalized === 'UNKNOWN') return 'UNKNOWN';
+  return normalized;
 }
