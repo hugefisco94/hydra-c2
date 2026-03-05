@@ -11,6 +11,9 @@ export function Sidebar() {
   const allActors = useActorStore((s) => s.actors);
   const analyticsOverview = useActorStore((s) => s.analyticsOverview);
   const threatAssessment = useActorStore((s) => s.threatAssessment);
+  const mdoStatus = useActorStore((s) => s.mdoStatus);
+  const oodaCycle = useActorStore((s) => s.oodaCycle);
+  const killWebMetrics = useActorStore((s) => s.killWebMetrics);
   const selectedActor = useActorStore((s) => s.selectedActor);
   const selectActor = useActorStore((s) => s.selectActor);
   const domainFilters = useActorStore((s) => s.domainFilters);
@@ -139,6 +142,89 @@ export function Sidebar() {
                 </div>
               );
             })}
+          </div>
+        )}
+      </div>
+      {/* MDO Status Panel */}
+      <div className="p-3 border-b border-gray-800 space-y-2.5 bg-gray-950/80">
+        <div className="flex items-center justify-between">
+          <h3 className="text-[11px] font-semibold text-gray-400 uppercase tracking-[0.18em]">
+            MDO Status
+          </h3>
+          <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
+            mdoStatus?.current_phase === 'COMPETE' ? 'bg-emerald-950/50 text-emerald-300 border border-emerald-700/40' :
+            mdoStatus?.current_phase === 'PENETRATE' ? 'bg-amber-950/50 text-amber-300 border border-amber-700/40' :
+            'bg-red-950/50 text-red-300 border border-red-700/40'
+          }`}>
+            {mdoStatus?.current_phase ?? 'N/A'}
+          </span>
+        </div>
+
+        {/* Domain Coverage Grid */}
+        <div className="grid grid-cols-3 gap-1 text-[10px] font-mono">
+          {mdoStatus && ['LAND', 'SEA', 'AIR', 'SPACE', 'CYBER', 'EMS'].map(domain => {
+            const d = mdoStatus.domains[domain];
+            const statusColor = d?.status === 'PERMISSIVE' ? 'text-emerald-400' :
+                                d?.status === 'CONTESTED' ? 'text-amber-400' :
+                                d?.status === 'DENIED' ? 'text-red-400' : 'text-gray-500';
+            return (
+              <div key={domain} className="px-1.5 py-1 rounded bg-gray-900/60 border border-gray-800 text-center">
+                <div className="text-gray-500">{domain}</div>
+                <div className={`font-semibold ${statusColor}`}>{d?.status?.slice(0,4) ?? '---'}</div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* OODA Cycle */}
+        {oodaCycle && (
+          <div className="space-y-1">
+            <div className="text-[10px] text-gray-500 uppercase tracking-[0.14em]">OODA Cycle</div>
+            <div className="flex gap-1">
+              {(['OBSERVE', 'ORIENT', 'DECIDE', 'ACT'] as const).map(phase => {
+                const p = oodaCycle.ooda_phases[phase];
+                const bg = p?.status === 'GREEN' ? 'bg-emerald-900/40 border-emerald-700/30' :
+                           p?.status === 'AMBER' ? 'bg-amber-900/40 border-amber-700/30' :
+                           'bg-red-900/40 border-red-700/30';
+                return (
+                  <div key={phase} className={`flex-1 text-center py-1 rounded border text-[9px] font-mono ${bg}`}>
+                    <div className="text-gray-400">{phase.slice(0,3)}</div>
+                    <div className="text-gray-200 font-semibold">{((p?.score ?? 0) * 100).toFixed(0)}%</div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex items-center justify-between text-[10px] font-mono">
+              <span className="text-gray-500">CYCLE</span>
+              <span className={`font-semibold ${
+                oodaCycle.cycle_assessment === 'SUPERIOR' ? 'text-emerald-400' :
+                oodaCycle.cycle_assessment === 'ADEQUATE' ? 'text-blue-400' :
+                oodaCycle.cycle_assessment === 'DEGRADED' ? 'text-amber-400' : 'text-red-400'
+              }`}>{oodaCycle.cycle_assessment}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Kill Web Connectivity */}
+        {killWebMetrics && (
+          <div className="flex items-center justify-between text-[10px] font-mono">
+            <span className="text-gray-500">KILL WEB</span>
+            <span className="text-gray-300">{killWebMetrics.kill_web_metrics.connectivity.toFixed(1)} conn</span>
+            <span className="text-gray-500">{killWebMetrics.total_edges} links</span>
+          </div>
+        )}
+
+        {/* Convergence Readiness */}
+        {mdoStatus && (
+          <div className="flex items-center justify-between text-[10px] font-mono">
+            <span className="text-gray-500">CONVERGENCE</span>
+            <div className="flex-1 mx-2 h-1.5 bg-gray-800 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-emerald-500 rounded-full transition-all"
+                style={{ width: `${(mdoStatus.convergence_readiness * 100)}%` }}
+              />
+            </div>
+            <span className="text-gray-300">{(mdoStatus.convergence_readiness * 100).toFixed(0)}%</span>
           </div>
         )}
       </div>

@@ -22,6 +22,9 @@ function App() {
   const setConnectionState = useActorStore((s) => s.setConnectionState);
   const fetchThreatAssessment = useActorStore((s) => s.fetchThreatAssessment);
   const fetchAnalyticsOverview = useActorStore((s) => s.fetchAnalyticsOverview);
+  const fetchMdoStatus = useActorStore((s) => s.fetchMdoStatus);
+  const fetchOodaCycle = useActorStore((s) => s.fetchOodaCycle);
+  const fetchKillWebMetrics = useActorStore((s) => s.fetchKillWebMetrics);
   const toggleSidebar = useActorStore((s) => s.toggleSidebar);
 
   const [showThreatRings, setShowThreatRings] = useState(true);
@@ -60,6 +63,9 @@ function App() {
     fetchActors();
     fetchThreatAssessment();
     fetchAnalyticsOverview();
+    fetchMdoStatus();
+    fetchOodaCycle();
+    fetchKillWebMetrics();
 
     // Polling intervals
     const healthInterval = setInterval(checkHealth, 10_000);
@@ -67,13 +73,24 @@ function App() {
       fetchActors();
       fetchThreatAssessment();
       fetchAnalyticsOverview();
+      fetchMdoStatus();
+      fetchOodaCycle();
+      fetchKillWebMetrics();
     }, POLL_INTERVAL_MS);
 
     return () => {
       clearInterval(healthInterval);
       clearInterval(actorInterval);
     };
-  }, [checkHealth, fetchActors, fetchThreatAssessment, fetchAnalyticsOverview]);
+  }, [
+    checkHealth,
+    fetchActors,
+    fetchThreatAssessment,
+    fetchAnalyticsOverview,
+    fetchMdoStatus,
+    fetchOodaCycle,
+    fetchKillWebMetrics,
+  ]);
 
   return (
     <div className="h-screen flex flex-col bg-gray-950 text-white">
@@ -125,10 +142,6 @@ function App() {
             showTrails={showTrails}
             crtMode={crtMode}
             satelliteMode={satelliteMode}
-            onToggleThreatRings={setShowThreatRings}
-            onToggleDmz={setShowDmz}
-            onToggleTrails={setShowTrails}
-            onToggleSatellite={setSatelliteMode}
           />
           <ActorPanel />
         </main>

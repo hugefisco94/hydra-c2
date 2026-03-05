@@ -26,3 +26,6 @@ Thumbs.db
 # Env
 .env
 .env.local
+
+# Reference repositories (cloned for analysis)
+_refs/
