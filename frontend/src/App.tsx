@@ -16,6 +16,9 @@ import { useActorStore } from './store/actorStore';
 import { ENDPOINTS, POLL_INTERVAL_MS, apiFetch } from './config/api';
 import type { ActorsResponse, HealthStatus } from './types';
 
+/** Stable reference for error health — avoids new object on every failed poll */
+const ERROR_HEALTH: HealthStatus = { status: 'error', infrastructure: 'unreachable' };
+
 function App() {
   const setActors = useActorStore((s) => s.setActors);
   const setHealth = useActorStore((s) => s.setHealth);
@@ -40,7 +43,7 @@ function App() {
         setConnectionState('connected');
       })
       .catch(() => {
-        setHealth({ status: 'error', infrastructure: 'unreachable' });
+        setHealth(ERROR_HEALTH);
         setConnectionState('disconnected');
       });
   }, [setHealth, setConnectionState]);
