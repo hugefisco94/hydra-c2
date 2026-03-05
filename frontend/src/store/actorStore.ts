@@ -2,6 +2,7 @@
  * Zustand store for HYDRA-C2 actor state management
  */
 
+import { useMemo } from 'react';
 import { create } from 'zustand';
 import { ENDPOINTS, apiFetch } from '../config/api';
 import type {
@@ -131,10 +132,15 @@ export const useActorStore = create<ActorState>((set) => ({
 }));
 
 /**
- * Selector: get actors filtered by active domain filters
+ * Selector: get actors filtered by active domain filters.
+ * Uses separate selectors + useMemo to return stable references
+ * and avoid infinite re-render loops from .filter() creating new arrays.
  */
 export function useFilteredActors(): Actor[] {
-  return useActorStore((s) =>
-    s.actors.filter((a) => s.domainFilters[a.domain] ?? true),
+  const actors = useActorStore((s) => s.actors);
+  const domainFilters = useActorStore((s) => s.domainFilters);
+  return useMemo(
+    () => actors.filter((a) => domainFilters[a.domain] ?? true),
+    [actors, domainFilters],
   );
 }
