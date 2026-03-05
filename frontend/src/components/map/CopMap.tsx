@@ -37,10 +37,6 @@ interface CopMapProps {
   showTrails: boolean;
   crtMode: boolean;
   satelliteMode: boolean;
-  onToggleThreatRings: (next: boolean) => void;
-  onToggleDmz: (next: boolean) => void;
-  onToggleTrails: (next: boolean) => void;
-  onToggleSatellite: (next: boolean) => void;
 }
 
 export function CopMap({
@@ -49,10 +45,6 @@ export function CopMap({
   showTrails,
   crtMode,
   satelliteMode,
-  onToggleThreatRings,
-  onToggleDmz,
-  onToggleTrails,
-  onToggleSatellite,
 }: CopMapProps) {
   const actors = useFilteredActors();
 
@@ -71,46 +63,29 @@ export function CopMap({
             <TileLayer
               attribution={TILE_ATTRIBUTION}
               url={TILE_URL}
-              eventHandlers={{ add: () => onToggleSatellite(false) }}
             />
           </LayersControl.BaseLayer>
           <LayersControl.BaseLayer checked={satelliteMode} name="Satellite">
             <TileLayer
               attribution={SATELLITE_ATTRIBUTION}
               url={SATELLITE_TILE_URL}
-              eventHandlers={{ add: () => onToggleSatellite(true) }}
             />
           </LayersControl.BaseLayer>
 
           <LayersControl.Overlay checked={showThreatRings} name="Threat Rings">
-            <LayerGroup
-              eventHandlers={{
-                add: () => onToggleThreatRings(true),
-                remove: () => onToggleThreatRings(false),
-              }}
-            >
+            <LayerGroup>
               <ThreatOverlays actors={actors} />
             </LayerGroup>
           </LayersControl.Overlay>
 
           <LayersControl.Overlay checked={showDmz} name="DMZ Geofence">
-            <LayerGroup
-              eventHandlers={{
-                add: () => onToggleDmz(true),
-                remove: () => onToggleDmz(false),
-              }}
-            >
+            <LayerGroup>
               <DmzOverlay />
             </LayerGroup>
           </LayersControl.Overlay>
 
           <LayersControl.Overlay checked={showTrails} name="Actor Trails">
-            <LayerGroup
-              eventHandlers={{
-                add: () => onToggleTrails(true),
-                remove: () => onToggleTrails(false),
-              }}
-            >
+            <LayerGroup>
               <ActorTrails actors={actors} />
             </LayerGroup>
           </LayersControl.Overlay>

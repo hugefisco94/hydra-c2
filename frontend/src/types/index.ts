@@ -69,6 +69,68 @@ export interface AnalyticsOverview {
   top_threats: Array<{ name: string; classification: string; composite_score: number }>;
   timestamp: string;
 }
+export interface MdoDomainStatus {
+  total_tracks: number;
+  friendly: number;
+  hostile: number;
+  coverage_pct: number;
+  status: 'PERMISSIVE' | 'CONTESTED' | 'DENIED' | 'UNKNOWN';
+}
+
+export interface MdoStatus {
+  doctrine: string;
+  current_phase: string;
+  phases: string[];
+  domains: Record<string, MdoDomainStatus>;
+  convergence_readiness: number;
+  cross_domain_synergy: {
+    contested_domains: number;
+    permissive_domains: number;
+    denied_domains: number;
+    total_friendly: number;
+    total_hostile: number;
+  };
+  timestamp: string;
+}
+
+export interface OodaPhase {
+  score: number;
+  status: 'GREEN' | 'AMBER' | 'RED';
+  [key: string]: unknown;
+}
+
+export interface OodaCycle {
+  doctrine: string;
+  ooda_phases: {
+    OBSERVE: OodaPhase;
+    ORIENT: OodaPhase;
+    DECIDE: OodaPhase;
+    ACT: OodaPhase;
+  };
+  composite_score: number;
+  cycle_assessment: string;
+  ncw_principles: {
+    information_superiority: number;
+    shared_awareness: number;
+    self_synchronization: number;
+  };
+  timestamp: string;
+}
+
+export interface KillWebMetrics {
+  doctrine: string;
+  nodes: { sensors: unknown[]; shooters: unknown[]; c2: unknown[]; total: number };
+  total_edges: number;
+  kill_web_metrics: {
+    connectivity: number;
+    redundancy: number;
+    cross_domain_links: number;
+    same_domain_links: number;
+    avg_paths_per_shooter: number;
+  };
+  force_packages: Array<{ name: string; composition: string; mission: string }>;
+  timestamp: string;
+}
 
 /** Affiliation color mapping for UI */
 export const AFFILIATION_COLORS: Record<Affiliation, string> = {
