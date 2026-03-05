@@ -16,6 +16,7 @@ from __future__ import annotations
 import hashlib
 import math
 import time
+from collections import deque
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
@@ -365,6 +366,207 @@ class KillWebFusion:
 
 
 # ---------------------------------------------------------------------------
+# Memory Tiers: Hot (recent) + Cold (long-term) — arXiv:2602.20478
+# ---------------------------------------------------------------------------
+
+
+class MemoryTier(Enum):
+    """
+    Tiered memory architecture (Codified Context, arXiv:2602.20478).
+
+    HOT : fast-access ring buffer for recent context (constitution-style).
+          Last-N entries; linear scan; no embedding overhead.
+    COLD: large-capacity store for persistent knowledge base.
+          Full MaxSim retrieval; append-only; backed by LateInteractionRetriever.
+    """
+    HOT  = "hot"
+    COLD = "cold"
+
+
+class HotMemoryBuffer:
+    """
+    Hot-memory ring buffer for recent intelligence context.
+
+    arXiv:2602.20478 (Codified Context): hot-memory constitution holds
+    current situation awareness — active rules, recent events, live tasks.
+    Ring buffer ensures last-N entries always fast-accessible without MaxSim.
+
+    Capacity : configurable, default 32 entries.
+    Eviction  : FIFO (oldest entry removed on overflow → promoted to cold).
+    """
+
+    def __init__(self, capacity: int = 32) -> None:
+        self._capacity = capacity
+        self._buffer: deque[IntelEntry] = deque(maxlen=capacity)
+
+    def push(self, entry: IntelEntry) -> IntelEntry | None:
+        """Add entry; return evicted entry when buffer is full."""
+        evicted: IntelEntry | None = None
+        if len(self._buffer) == self._capacity:
+            evicted = self._buffer[0]   # leftmost = oldest
+        self._buffer.append(entry)
+        return evicted
+
+    def peek_recent(self, n: int = 8) -> list[IntelEntry]:
+        """Return last N entries (most recent context window)."""
+        items = list(self._buffer)
+        return items[-n:] if items else []
+
+    def search_hot(self, query_text: str, top_k: int = 3) -> list[IntelEntry]:
+        """
+        Linear scan over hot buffer (small N → fast, no embedding needed).
+        Scores by word-overlap; suitable for constitution-style lookups.
+        """
+        q_words = set(query_text.lower().split())
+        scored: list[tuple[IntelEntry, int]] = [
+            (e, len(q_words & set(e.content.lower().split())))
+            for e in self._buffer
+        ]
+        scored.sort(key=lambda x: x[1], reverse=True)
+        return [e for e, s in scored[:top_k] if s > 0]
+
+    def flush_to_cold(self) -> list[IntelEntry]:
+        """Flush entire buffer → returns entries for cold archival."""
+        entries = list(self._buffer)
+        self._buffer.clear()
+        return entries
+
+    @property
+    def size(self) -> int:
+        return len(self._buffer)
+
+    @property
+    def tier(self) -> MemoryTier:
+        return MemoryTier.HOT
+
+
+class ColdMemoryStore:
+    """
+    Cold-memory persistent knowledge base.
+
+    arXiv:2602.20478: cold-memory knowledge base contains documentation
+    covering system design, patterns, domain rules (34 docs in original paper).
+    Backed by LateInteractionRetriever for full MaxSim search.
+
+    Receives overflow from HotMemoryBuffer.push() evictions.
+    """
+
+    def __init__(self, retriever: LateInteractionRetriever) -> None:
+        self._retriever = retriever
+        self._doc_count: int = 0
+
+    def archive(self, entries: list[IntelEntry]) -> int:
+        """Archive entries (hot overflow) into cold retrieval index."""
+        for entry in entries:
+            self._retriever.index(entry)
+            self._doc_count += 1
+        return len(entries)
+
+    def retrieve(
+        self,
+        query_tokens: list[list[float]],
+        top_k: int = 5,
+        source_filter: SourceType | None = None,
+    ) -> list[QueryResult]:
+        """Full MaxSim search over cold store."""
+        return self._retriever.search(
+            query_tokens, top_k=top_k, source_filter=source_filter
+        )
+
+    @property
+    def doc_count(self) -> int:
+        return self._doc_count
+
+    @property
+    def tier(self) -> MemoryTier:
+        return MemoryTier.COLD
+
+
+class SemanticMemoryIndex:
+    """
+    Unified semantic memory: Vector (MaxSim) + Graph (adjacency) retrieval.
+
+    Image 3 (Multi-Agent Patterns, Semantic Memory pattern):
+      Vector DB → similarity search (cold MaxSim / hot word-overlap)
+      Graph DB  → relationship traversal (entry_id adjacency map)
+
+    Query cascade:
+      1. Hot scan  (fast, recent)      → O(capacity) linear
+      2. Cold MaxSim (accurate, large) → O(index_size) dot products
+      3. Graph expand                  → follow edges from top-K hits
+
+    Used by ORIENT phase of OODA to ground situation analysis in
+    both fresh (hot) and archival (cold) intelligence.
+    """
+
+    def __init__(
+        self,
+        retriever: LateInteractionRetriever,
+        hot_capacity: int = 32,
+    ) -> None:
+        self._hot  = HotMemoryBuffer(capacity=hot_capacity)
+        self._cold = ColdMemoryStore(retriever=retriever)
+        # Graph DB: entry_id → list[related entry_ids]
+        self._graph: dict[str, list[str]] = {}
+
+    def ingest(
+        self,
+        entry: IntelEntry,
+        related_ids: list[str] | None = None,
+    ) -> None:
+        """Ingest entry into hot tier; overflow auto-promoted to cold."""
+        evicted = self._hot.push(entry)
+        if evicted is not None:
+            self._cold.archive([evicted])
+        if related_ids:
+            self._graph[entry.entry_id] = related_ids
+
+    def query(
+        self,
+        query_text: str,
+        retriever: LateInteractionRetriever,
+        top_k: int = 5,
+    ) -> dict[str, Any]:
+        """
+        Two-phase semantic query: hot scan → cold MaxSim → graph expand.
+        Returns merged results from both memory tiers.
+        """
+        # Phase 1: Hot tier — fast word-overlap scan
+        hot_hits = self._hot.search_hot(query_text, top_k=top_k)
+
+        # Phase 2: Cold tier — MaxSim embedding search
+        stub = IntelEntry(
+            entry_id="semantic-q",
+            source_type=SourceType.OSINT,
+            content=query_text,
+        )
+        query_tokens = retriever._embed(stub).token_embeddings
+        cold_results = self._cold.retrieve(query_tokens, top_k=top_k)
+
+        # Phase 3: Graph expansion — related entries from both tiers
+        related_ids: set[str] = set()
+        for e in hot_hits:
+            related_ids.update(self._graph.get(e.entry_id, []))
+        for r in cold_results:
+            related_ids.update(self._graph.get(r.entry.entry_id, []))
+
+        return {
+            "hot_hits":          hot_hits,
+            "cold_hits":         [r.entry for r in cold_results],
+            "graph_related_ids": list(related_ids),
+            "hot_size":          self._hot.size,
+            "cold_docs":         self._cold.doc_count,
+        }
+
+    def stats(self) -> dict[str, Any]:
+        return {
+            "hot_size":    self._hot.size,
+            "cold_docs":   self._cold.doc_count,
+            "graph_nodes": len(self._graph),
+        }
+
+
+# ---------------------------------------------------------------------------
 # Module exports
 # ---------------------------------------------------------------------------
 
@@ -388,4 +590,9 @@ __all__ = [
     "OsintCollector",
     "KillWebFusion",
     "create_intelligence_layer",
+    # Memory tier additions — arXiv:2602.20478 + Image 3
+    "MemoryTier",
+    "HotMemoryBuffer",
+    "ColdMemoryStore",
+    "SemanticMemoryIndex",
 ]

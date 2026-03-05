@@ -15,6 +15,7 @@ Learning sources:
 from __future__ import annotations
 
 import asyncio
+import math
 import time
 from dataclasses import dataclass, field
 from enum import Enum
@@ -164,6 +165,46 @@ class CoPlayerInferenceEngine:
         # Trim to prevent context overflow (Utah pruning pattern)
         if len(self._episode_history) > 200:
             self._episode_history = self._episode_history[-100:]
+
+    def volatility_adaptive_pressure(
+        self,
+        agent_id: str,
+        window: int = 10,
+    ) -> float:
+        """
+        Volatility-Adaptive Discounted Cooperation Pressure (VAD-CFR).
+
+        arXiv:2602.16928 (AlphaEvolve, Google DeepMind):
+          High volatility in recent history → discount older actions aggressively.
+          Low  volatility                   → trust longer history window.
+
+        discount_factor = 1 / (1 + σ_reward)
+        pressure        = Σ_t  discount^t × reward_t   (t=0 = most recent)
+
+        Returns normalised pressure in [0, 1].
+        """
+        recent = [
+            a for a in self._episode_history[-window:]
+            if a.agent_id != agent_id
+        ]
+        if not recent:
+            return 0.0
+
+        rewards = [a.reward_signal for a in recent]
+        mean_r  = sum(rewards) / len(rewards)
+        variance = sum((r - mean_r) ** 2 for r in rewards) / max(len(rewards), 1)
+        volatility = math.sqrt(variance)
+
+        # Adaptive discount: high volatility → steeper decay
+        discount = 1.0 / (1.0 + volatility)
+
+        # Discounted cumulative pressure (most recent action has weight 1)
+        pressure = sum(
+            (discount ** t) * a.reward_signal
+            for t, a in enumerate(reversed(recent))
+        )
+        max_possible = sum(discount ** t for t in range(len(recent)))
+        return min(1.0, max(0.0, pressure / max(max_possible, 1e-9)))
 
     @property
     def cooperation_state(self) -> dict[str, float]:
@@ -351,6 +392,75 @@ class OodaDecisionEngine:
     # Accessors
     # ------------------------------------------------------------------
 
+    def think_depth_metric(self, ooda_state: OodaState) -> float:
+        """
+        Think-depth quality metric (arXiv:2602.13517, Google / UVA).
+
+        Key finding: deep-thinking ratio (tokens with significant internal
+        revision across layers) matters more than raw token count.
+        Shallow breadth-first reasoning scores low even with many tokens.
+
+        HYDRA proxy for depth:
+          depth = (source_diversity × intel_count × obs_count)
+                  / max(loop_duration_ms, 1.0)  × 1000
+
+        Higher depth → more distinct information domains resolved before
+        decision; lower duration → faster synthesis → higher quality signal.
+        """
+        source_diversity = len(
+            {r.entry.source_type.value for r in ooda_state.intel_results}
+        )
+        intel_count = len(ooda_state.intel_results)
+        obs_count   = len(ooda_state.observations)
+
+        depth_score = (
+            (source_diversity * intel_count * obs_count)
+            / max(ooda_state.loop_duration_ms, 1.0)
+        ) * 1000.0
+        return round(depth_score, 4)
+
+    def multi_listener_validate(
+        self,
+        reasoning_trace: str,
+        listener_agents: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """
+        Multi-listener validation of reasoning trace (REMUL).
+
+        arXiv:2602.16154: Speaker generates CoT trace → multiple listener
+        agents attempt to execute it → speaker rewarded for traces that
+        all listeners can follow (faithful, not just plausible).
+
+        HYDRA: DECIDE generates reasoning trace → domain agents (listeners)
+        validate it. Trace is faithful if listeners can reproduce decision
+        from trace keywords alone.
+
+        Returns followability_score in [0, 1]; is_faithful ≥ 0.60.
+        """
+        listeners = listener_agents or self._domain_agents
+        domain_keywords: dict[str, list[str]] = {
+            "SDR":       ["signal", "frequency", "sigint", "sdr", "rf"],
+            "TAK":       ["position", "geoint", "tak", "callsign", "lat", "lon"],
+            "MESH":      ["mesh", "comint", "node", "message", "meshtastic"],
+            "ANALYTICS": ["analytics", "analysis", "pattern", "trend", "metric"],
+            "NEXUS":     ["nexus", "fusion", "aggregate", "multi-domain", "kill"],
+        }
+        trace_lower = reasoning_trace.lower()
+        per_listener: dict[str, bool] = {}
+        for listener in listeners:
+            keywords = domain_keywords.get(listener.upper(), [listener.lower()])
+            per_listener[listener] = any(kw in trace_lower for kw in keywords)
+
+        followable_count   = sum(1 for v in per_listener.values() if v)
+        followability_score = followable_count / max(len(listeners), 1)
+        return {
+            "trace_length":        len(reasoning_trace),
+            "listener_count":      len(listeners),
+            "followability_score": round(followability_score, 4),
+            "per_listener":        per_listener,
+            "is_faithful":         followability_score >= 0.6,
+        }
+
     @property
     def cycle_count(self) -> int:
         return self._cycle_count
@@ -403,4 +513,8 @@ __all__ = [
     "CoPlayerInferenceEngine",
     "OodaDecisionEngine",
     "create_ooda_layer",
+    # Methods added (not classes, documented here for reference):
+    # CoPlayerInferenceEngine.volatility_adaptive_pressure  — arXiv:2602.16928 VAD-CFR
+    # OodaDecisionEngine.think_depth_metric                 — arXiv:2602.13517
+    # OodaDecisionEngine.multi_listener_validate            — arXiv:2602.16154 REMUL
 ]
