@@ -1,16 +1,19 @@
+```text
+ ██╗  ██╗ ██╗   ██╗ ██████╗  ██████╗   █████╗        ██████╗ ██████╗
+ ██║  ██║ ╚██╗ ██╔╝ ██╔══██╗ ██╔══██╗ ██╔══██╗      ██╔════╝ ╚════██╗
+ ███████║  ╚████╔╝  ██║  ██║ ██████╔╝ ███████║      ██║       █████╔╝
+ ██╔══██║   ╚██╔╝   ██║  ██║ ██╔══██╗ ██╔══██║      ██║      ██╔═══╝
+ ██║  ██║    ██║    ██████╔╝ ██║  ██║ ██║  ██║      ╚██████╗ ███████╗
+ ╚═╝  ╚═╝    ╚═╝    ╚═════╝  ╚═╝  ╚═╝ ╚═╝  ╚═╝       ╚═════╝ ╚══════╝
+```
 
- ██╗  ██╗██╗   ██╗██████╗ ██████╗  █████╗       ██████╗██████╗ 
- ██║  ██║╚██╗ ██╔╝██╔══██╗██╔══██╗██╔══██╗     ██╔════╝╚════██╗
- ███████║ ╚████╔╝ ██║  ██║██████╔╝███████║     ██║      █████╔╝
- ██╔══██║  ╚██╔╝  ██║  ██║██╔══██╗██╔══██║     ██║     ██╔═══╝ 
- ██║  ██║   ██║   ██████╔╝██║  ██║██║  ██║     ╚██████╗███████╗
- ╚═╝  ╚═╝   ╚═╝   ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝      ╚═════╝╚══════╝
-
- ┌─────────────────────────────────────────────────────────────┐
- │  HYDRA-C2 // MULTI-DOMAIN COMMAND & CONTROL FRAMEWORK       │
- │  Hybrid Universal Dynamic Reconnaissance Architecture       │
- │  CLASSIFICATION: UNCLASSIFIED // OPEN SOURCE                │
- └─────────────────────────────────────────────────────────────┘
+```text
+ ┌──────────────────────────────────────────────────────────────────┐
+ │  HYDRA-C2 // MULTI-DOMAIN COMMAND & CONTROL FRAMEWORK           │
+ │  Hybrid Universal Dynamic Reconnaissance Architecture           │
+ │  CLASSIFICATION: UNCLASSIFIED // OPEN SOURCE                    │
+ └──────────────────────────────────────────────────────────────────┘
+```
 
 <p align="center">
   <img src="https://img.shields.io/badge/STATUS-OPERATIONAL-39ff14?style=for-the-badge&labelColor=0a0a0f" alt="Status Operational">
@@ -28,52 +31,61 @@
 > Multi-domain Command & Control framework for distributed operations. Real-time COP dashboard with MIL-STD-2525B symbology, PostGIS spatial analysis, and encrypted mesh networking.
 
 ```text
- SYSTEM STATUS ──────────────────────────────────────────────
- [●] COP DASHBOARD     ONLINE    ████████████████████  100%
- [●] FASTAPI BACKEND   ONLINE    ████████████████████  100%
- [●] POSTGIS SPATIAL   ONLINE    ████████████████████  100%
- [●] NEO4J GRAPH       ONLINE    ████████████████████  100%
- [●] MQTT BROKER       ONLINE    ████████████████████  100%
- ────────────────────────────────────────────────────────────
+ SYSTEM STATUS ─────────────────────────────────────────────────────
+ [●] COP DASHBOARD      ONLINE    ████████████████████  100%
+ [●] FASTAPI BACKEND    ONLINE    ████████████████████  100%
+ [●] POSTGIS SPATIAL    ONLINE    ████████████████████  100%
+ [●] NEO4J GRAPH        ONLINE    ████████████████████  100%
+ [●] MQTT BROKER        ONLINE    ████████████████████  100%
+ ───────────────────────────────────────────────────────────────────
 ```
 
 ```text
  HYDRA-C2 ARCHITECTURE // CLEAN ARCHITECTURE + 7-LAYER STACK
- ═══════════════════════════════════════════════════════════
+ ══════════════════════════════════════════════════════════════════
 
- ┌───────────────────────────────────────────────────────────┐
- │                  L6 — VISUALIZATION                       │
- │  ┌────────────┐  ┌────────────┐  ┌────────────────────┐  │
- │  │  REACT COP │  │  MILSYMBOL │  │  LEAFLET MAP       │  │
- │  │  DASHBOARD │  │  2525B     │  │  + DARK TILES      │  │
- │  └─────┬──────┘  └─────┬──────┘  └────────┬───────────┘  │
- └────────┼────────────────┼──────────────────┼──────────────┘
-          └────────────────┼──────────────────┘
-                           │  REST API
- ┌─────────────────────────▼─────────────────────────────────┐
- │                  L4 — PERSISTENCE                          │
- │  ┌────────────┐  ┌────────────┐  ┌────────────────────┐  │
- │  │  POSTGIS   │  │  NEO4J     │  │  MQTT BROKER       │  │
- │  │  SPATIAL   │  │  GRAPH     │  │  (MOSQUITTO)       │  │
- │  └────────────┘  └────────────┘  └────────────────────┘  │
- └───────────────────────────────────────────────────────────┘
-          ▲                ▲                  ▲
-          │                │                  │
- ┌────────┴────┐  ┌───────┴──────┐  ┌────────┴──────────┐
- │  L0: RF/SDR │  │  L1: ATAK    │  │  L2: MESHTASTIC   │
- │  KrakenSDR  │  │  TAK Server  │  │  LoRa Mesh        │
- └─────────────┘  └──────────────┘  └───────────────────┘
+ ┌────────────────────────────────────────────────────────────────┐
+ │                    L6 — VISUALIZATION LAYER                    │
+ │                                                                │
+ │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐ │
+ │  │  REACT COP   │  │  MILSYMBOL   │  │  LEAFLET MAP         │ │
+ │  │  DASHBOARD   │  │  2525B       │  │  + DARK TILES        │ │
+ │  └──────┬───────┘  └──────┬───────┘  └──────────┬───────────┘ │
+ └─────────┼─────────────────┼─────────────────────┼─────────────┘
+           └─────────────────┼─────────────────────┘
+                             │
+                      REST / WebSocket
+                             │
+ ┌───────────────────────────▼──────────────────────────────────┐
+ │                    L5 — ANALYTICS ENGINE                      │
+ │  Pandas · GeoPandas · scikit-learn · NetworkX · Folium       │
+ └───────────────────────────┬──────────────────────────────────┘
+                             │
+ ┌───────────────────────────▼──────────────────────────────────┐
+ │                    L4 — PERSISTENCE LAYER                     │
+ │                                                               │
+ │  ┌──────────────┐  ┌──────────────┐  ┌────────────────────┐  │
+ │  │  POSTGIS     │  │  NEO4J       │  │  MQTT BROKER       │  │
+ │  │  SPATIAL DB  │  │  GRAPH DB    │  │  (MOSQUITTO)       │  │
+ │  └──────┬───────┘  └──────┬───────┘  └─────────┬──────────┘  │
+ └─────────┼─────────────────┼────────────────────┼──────────────┘
+           │                 │                    │
+ ┌─────────▼────┐  ┌────────▼───────┐  ┌─────────▼──────────┐
+ │  L0: RF/SDR  │  │  L1: ATAK/TAK  │  │  L2: MESHTASTIC    │
+ │  KrakenSDR   │  │  TAK Server    │  │  LoRa Mesh Net     │
+ │  RTL-SDR     │  │  CoT Gateway   │  │  Encrypted P2P     │
+ └──────────────┘  └────────────────┘  └────────────────────┘
 ```
 
 ## FEATURES
-- 🗺️ Real-time Common Operating Picture (COP) with Leaflet + dark CartoDB tiles
-- ⚔️ MIL-STD-2525B military symbology via milsymbol
-- 📡 KrakenSDR direction-finding & RF triangulation
-- 🛰️ PostGIS spatial queries (radius search, geofencing)
-- 🕸️ Neo4j graph analysis (co-location, network traversal)
-- 🔐 Zero-trust architecture with encrypted mesh transport
-- 📊 Grafana monitoring dashboards
-- 🐳 Docker Compose one-command deployment
+- Real-time Common Operating Picture (COP) with Leaflet + dark CartoDB tiles
+- MIL-STD-2525B military symbology via milsymbol
+- KrakenSDR direction-finding & RF triangulation
+- PostGIS spatial queries (radius search, geofencing)
+- Neo4j graph analysis (co-location, network traversal)
+- Zero-trust architecture with encrypted mesh transport
+- Grafana monitoring dashboards
+- Docker Compose one-command deployment
 
 ## QUICK START
 
@@ -82,8 +94,12 @@
 git clone https://github.com/hugefisco94/hydra-c2.git
 cd hydra-c2
 
-# Start all services (PostGIS, Neo4j, MQTT, Grafana, API)
+# Option 1: Full stack via Docker Compose
 docker compose -f deploy/docker/docker-compose.yml up -d
+
+# Option 2: Standalone local mode (no external DBs required)
+pip install -e .
+python -m hydra_c2.standalone
 
 # Seed operational data
 python scripts/seed_data.py --direct
@@ -94,32 +110,38 @@ open https://hugefisco94.github.io/hydra-c2/
 
 ## API ENDPOINTS
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/health` | GET | System health & layer status |
-| `/api/v1/actors` | GET | List actors (spatial filter optional) |
-| `/api/v1/actors/{id}/network` | GET | Neo4j network traversal |
-| `/api/v1/cot/ingest` | POST | CoT XML ingestion |
-| `/api/v1/sdr/detections` | GET | SDR transmission detections |
-| `/api/v1/geofences` | POST | Create geofence polygon |
-| `/api/v1/geofences/check` | POST | Check geofence breach |
+```text
+ METHOD │ ENDPOINT                       │ DESCRIPTION
+ ───────┼────────────────────────────────┼──────────────────────────────
+ GET    │ /health                        │ System health & layer status
+ GET    │ /api/v1/actors                 │ List actors (spatial filter)
+ GET    │ /api/v1/actors/{id}/network    │ Neo4j network traversal
+ POST   │ /api/v1/cot/ingest            │ CoT XML ingestion
+ GET    │ /api/v1/sdr/detections         │ SDR transmission detections
+ POST   │ /api/v1/geofences             │ Create geofence polygon
+ POST   │ /api/v1/geofences/check       │ Check geofence breach
+```
 
 ## TECH STACK
 
 ```text
-DOMAIN    │  Python 3.12 · FastAPI · Pydantic · structlog
-SPATIAL   │  PostgreSQL 16 · PostGIS 3.4 · GeoAlchemy2
-GRAPH     │  Neo4j 5.x · Cypher · Bolt protocol
-FRONTEND  │  React 19 · TypeScript · Vite 7 · Tailwind CSS 4
-MAPPING   │  Leaflet · react-leaflet v5 · milsymbol v3
-MESSAGING │  Mosquitto MQTT · WebSocket
-INFRA     │  Docker Compose · AMD MI300X GPU · DO Cloud
-CI/CD     │  Harness.io · GitHub Pages · gh-pages deploy
+ LAYER     │ TECHNOLOGY
+ ──────────┼───────────────────────────────────────────────────────
+ DOMAIN    │ Python 3.12 · FastAPI · Pydantic · structlog
+ SPATIAL   │ PostgreSQL 16 · PostGIS 3.4 · GeoAlchemy2
+ GRAPH     │ Neo4j 5.x · Cypher · Bolt protocol
+ FRONTEND  │ React 19 · TypeScript · Vite 7 · Tailwind CSS 4
+ MAPPING   │ Leaflet · react-leaflet v5 · milsymbol v3
+ MESSAGING │ Mosquitto MQTT · WebSocket
+ INFRA     │ Docker Compose · AMD MI300X GPU · DO Cloud
+ CI/CD     │ Harness.io · GitHub Pages · gh-pages deploy
 ```
 
 ## LICENSE
 MIT
 
-─────────────────────────────────────────────────────────────
-⚠ UNCLASSIFIED // OPEN SOURCE // FOR AUTHORIZED USE ONLY ⚠
-─────────────────────────────────────────────────────────────
+```text
+ ─────────────────────────────────────────────────────────────────
+ ⚠  UNCLASSIFIED // OPEN SOURCE // FOR AUTHORIZED USE ONLY  ⚠
+ ─────────────────────────────────────────────────────────────────
+```
