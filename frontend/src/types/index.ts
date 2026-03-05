@@ -69,68 +69,47 @@ export interface AnalyticsOverview {
   top_threats: Array<{ name: string; classification: string; composite_score: number }>;
   timestamp: string;
 }
-export interface MdoDomainStatus {
-  total_tracks: number;
-  friendly: number;
-  hostile: number;
-  coverage_pct: number;
-  status: 'PERMISSIVE' | 'CONTESTED' | 'DENIED' | 'UNKNOWN';
+/** OSINT event from GDELT or OpenSky feeds */
+export interface OsintEvent {
+  id: string;
+  source: 'GDELT' | 'OPENSKY';
+  event_type: string;
+  title: string;
+  timestamp: string;
+  location?: { lat: number; lon: number };
+  relevance_score: number;
+  metadata?: Record<string, unknown>;
 }
 
-export interface MdoStatus {
-  doctrine: string;
-  current_phase: string;
-  phases: string[];
-  domains: Record<string, MdoDomainStatus>;
-  convergence_readiness: number;
-  cross_domain_synergy: {
-    contested_domains: number;
-    permissive_domains: number;
-    denied_domains: number;
-    total_friendly: number;
-    total_hostile: number;
-  };
+/** Aggregated OSINT feed response */
+export interface OsintFeedsResponse {
+  source: string;
+  events: OsintEvent[];
+  breakdown: Record<string, number>;
   timestamp: string;
 }
 
-export interface OodaPhase {
-  score: number;
-  status: 'GREEN' | 'AMBER' | 'RED';
-  [key: string]: unknown;
-}
-
-export interface OodaCycle {
-  doctrine: string;
-  ooda_phases: {
-    OBSERVE: OodaPhase;
-    ORIENT: OodaPhase;
-    DECIDE: OodaPhase;
-    ACT: OodaPhase;
-  };
+/** Bayesian causal DAG threat assessment */
+export interface CausalAssessment {
+  threat_level: 'CRITICAL' | 'HIGH' | 'ELEVATED' | 'LOW' | 'MINIMAL';
   composite_score: number;
-  cycle_assessment: string;
-  ncw_principles: {
-    information_superiority: number;
-    shared_awareness: number;
-    self_synchronization: number;
+  escalation_probability: number;
+  military_posture_index: number;
+  causal_factors: {
+    gdelt_tone_avg: number;
+    aircraft_density: number;
+    escalation_node: number;
+    posture_node: number;
+  };
+  evidence_summary: {
+    gdelt_articles: number;
+    military_flights: number;
+    assessment_basis: string;
   };
   timestamp: string;
 }
 
-export interface KillWebMetrics {
-  doctrine: string;
-  nodes: { sensors: unknown[]; shooters: unknown[]; c2: unknown[]; total: number };
-  total_edges: number;
-  kill_web_metrics: {
-    connectivity: number;
-    redundancy: number;
-    cross_domain_links: number;
-    same_domain_links: number;
-    avg_paths_per_shooter: number;
-  };
-  force_packages: Array<{ name: string; composition: string; mission: string }>;
-  timestamp: string;
-}
+export type ThreatLevel = CausalAssessment['threat_level'];
 
 /** Affiliation color mapping for UI */
 export const AFFILIATION_COLORS: Record<Affiliation, string> = {
@@ -148,4 +127,13 @@ export const DOMAIN_LABELS: Record<Domain, string> = {
   SUBSURFACE: '🔽',
   SPACE: '🛰️',
   CYBER: '💻',
+};
+
+/** Threat level color mapping for Bayesian assessment UI */
+export const THREAT_LEVEL_COLORS: Record<string, string> = {
+  CRITICAL: '#ef4444',
+  HIGH: '#f97316',
+  ELEVATED: '#eab308',
+  LOW: '#22c55e',
+  MINIMAL: '#6b7280',
 };

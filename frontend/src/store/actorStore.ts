@@ -10,9 +10,8 @@ import type {
   AnalyticsOverview,
   HealthStatus,
   ThreatAssessment,
-  MdoStatus,
-  OodaCycle,
-  KillWebMetrics,
+  OsintFeedsResponse,
+  CausalAssessment,
 } from '../types';
 
 export type ConnectionState = 'connecting' | 'connected' | 'disconnected';
@@ -33,9 +32,8 @@ interface ActorState {
   health: HealthStatus | null;
   threatAssessment: ThreatAssessment | null;
   analyticsOverview: AnalyticsOverview | null;
-  mdoStatus: MdoStatus | null;
-  oodaCycle: OodaCycle | null;
-  killWebMetrics: KillWebMetrics | null;
+  osintFeeds: OsintFeedsResponse | null;
+  causalAssessment: CausalAssessment | null;
   connectionState: ConnectionState;
 
   // UI
@@ -49,9 +47,8 @@ interface ActorState {
   setConnectionState: (state: ConnectionState) => void;
   fetchThreatAssessment: () => Promise<void>;
   fetchAnalyticsOverview: () => Promise<void>;
-  fetchMdoStatus: () => Promise<void>;
-  fetchOodaCycle: () => Promise<void>;
-  fetchKillWebMetrics: () => Promise<void>;
+  fetchOsintFeeds: () => Promise<void>;
+  fetchCausalAssessment: () => Promise<void>;
   toggleSidebar: () => void;
   toggleDomainFilter: (domain: keyof DomainFilter) => void;
 }
@@ -63,9 +60,8 @@ export const useActorStore = create<ActorState>((set) => ({
   health: null,
   threatAssessment: null,
   analyticsOverview: null,
-  mdoStatus: null,
-  oodaCycle: null,
-  killWebMetrics: null,
+  osintFeeds: null,
+  causalAssessment: null,
   connectionState: 'connecting',
   sidebarOpen: true,
   domainFilters: {
@@ -99,24 +95,17 @@ export const useActorStore = create<ActorState>((set) => ({
       set({ analyticsOverview });
     } catch {}
   },
-  fetchMdoStatus: async () => {
+  fetchOsintFeeds: async () => {
     try {
-      const mdoStatus = await apiFetch<MdoStatus>(ENDPOINTS.mdoStatus);
-      set({ mdoStatus });
+      const osintFeeds = await apiFetch<OsintFeedsResponse>(ENDPOINTS.osintFeeds);
+      set({ osintFeeds });
     } catch {}
   },
 
-  fetchOodaCycle: async () => {
+  fetchCausalAssessment: async () => {
     try {
-      const oodaCycle = await apiFetch<OodaCycle>(ENDPOINTS.oodaCycle);
-      set({ oodaCycle });
-    } catch {}
-  },
-
-  fetchKillWebMetrics: async () => {
-    try {
-      const killWebMetrics = await apiFetch<KillWebMetrics>(ENDPOINTS.killWeb);
-      set({ killWebMetrics });
+      const causalAssessment = await apiFetch<CausalAssessment>(ENDPOINTS.osintThreatAssessment);
+      set({ causalAssessment });
     } catch {}
   },
 
