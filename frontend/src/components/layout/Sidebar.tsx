@@ -135,8 +135,8 @@ export function Sidebar() {
                     <div className={`threat-score-fill ${classificationClass}`} style={{ width: scoreWidth }} />
                   </div>
                   <div className="mt-1 text-[10px] text-gray-500 font-mono flex items-center justify-between">
-                    <span>SCORE {threat.composite_score.toFixed(3)}</span>
-                    <span>TEHRAN {threat.distance_to_tehran_km.toFixed(1)}km</span>
+                    <span>SCORE {(threat.composite_score ?? 0).toFixed(3)}</span>
+                    <span>TEHRAN {(threat.distance_to_tehran_km ?? 0).toFixed(1)}km</span>
                   </div>
                 </div>
               );
@@ -169,7 +169,7 @@ export function Sidebar() {
           <div className="space-y-1.5">
             <div className="flex items-center justify-between text-[10px] font-mono">
               <span className="text-gray-500">COMPOSITE</span>
-              <span className="text-gray-200 font-semibold">{causalAssessment.composite_score.toFixed(3)}</span>
+              <span className="text-gray-200 font-semibold">{(causalAssessment.composite_score ?? 0).toFixed(3)}</span>
             </div>
             <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
               <div
@@ -185,30 +185,30 @@ export function Sidebar() {
             <div className="grid grid-cols-2 gap-1 text-[10px] font-mono">
               <div className="px-1.5 py-1 rounded bg-gray-900/60 border border-gray-800">
                 <div className="text-gray-500">ESCALATION</div>
-                <div className="text-amber-300 font-semibold">{(causalAssessment.escalation_probability * 100).toFixed(0)}%</div>
+                <div className="text-amber-300 font-semibold">{((causalAssessment.escalation_probability ?? 0) * 100).toFixed(0)}%</div>
               </div>
               <div className="px-1.5 py-1 rounded bg-gray-900/60 border border-gray-800">
                 <div className="text-gray-500">MIL POSTURE</div>
-                <div className="text-blue-300 font-semibold">{(causalAssessment.military_posture_index * 100).toFixed(0)}%</div>
+                <div className="text-blue-300 font-semibold">{((causalAssessment.military_posture_index ?? 0) * 100).toFixed(0)}%</div>
               </div>
               <div className="px-1.5 py-1 rounded bg-gray-900/60 border border-gray-800">
                 <div className="text-gray-500">GDELT TONE</div>
-                <div className="text-gray-200">{causalAssessment.causal_factors.gdelt_tone_avg.toFixed(2)}</div>
+                <div className="text-gray-200">{(causalAssessment.causal_factors?.gdelt_tone_avg ?? 0).toFixed(2)}</div>
               </div>
               <div className="px-1.5 py-1 rounded bg-gray-900/60 border border-gray-800">
                 <div className="text-gray-500">AIR DENSITY</div>
-                <div className="text-gray-200">{causalAssessment.causal_factors.aircraft_density.toFixed(1)}</div>
+                <div className="text-gray-200">{(causalAssessment.causal_factors?.aircraft_density ?? 0).toFixed(1)}</div>
               </div>
             </div>
 
             {/* Evidence Summary */}
             <div className="flex items-center justify-between text-[10px] font-mono">
               <span className="text-gray-500">GDELT</span>
-              <span className="text-gray-300">{causalAssessment.evidence_summary.gdelt_articles} articles</span>
+              <span className="text-gray-300">{causalAssessment.evidence_summary?.gdelt_articles ?? 0} articles</span>
             </div>
             <div className="flex items-center justify-between text-[10px] font-mono">
               <span className="text-gray-500">OPENSKY</span>
-              <span className="text-gray-300">{causalAssessment.evidence_summary.military_flights} mil flights</span>
+              <span className="text-gray-300">{causalAssessment.evidence_summary?.military_flights ?? 0} mil flights</span>
             </div>
           </div>
         )}
