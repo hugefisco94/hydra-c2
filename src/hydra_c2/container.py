@@ -15,7 +15,7 @@ Usage:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Any, Optional
 
 import structlog
 
@@ -48,6 +48,15 @@ class Container:
     _geofence_repo: Optional[GeofenceRepository] = field(default=None, init=False)
     _publisher: Optional[MessagePublisher] = field(default=None, init=False)
     _subscriber: Optional[MessageSubscriber] = field(default=None, init=False)
+
+    # L0 – KrakenSDR Radio Direction Finding
+    _kraken_adapter: Optional[Any] = field(default=None, init=False)
+    # L1 – TAK/CoT Client
+    _tak_client: Optional[Any] = field(default=None, init=False)
+    # L2 – Meshtastic LoRa Mesh
+    _meshtastic_adapter: Optional[Any] = field(default=None, init=False)
+    # L5 – ML Analytics Engine
+    _ml_engine: Optional[Any] = field(default=None, init=False)
 
     async def startup(self) -> None:
         """Initialize all infrastructure connections."""
@@ -92,12 +101,65 @@ class Container:
         await self._subscriber.connect()
         logger.info("mqtt_initialized", host=self.settings.mqtt.host)
 
+        # --- L0: KrakenSDR ---
+        from hydra_c2.infrastructure.sdr.kraken import KrakenSdrAdapter
+
+        self._kraken_adapter = KrakenSdrAdapter(
+            host=getattr(self.settings, "kraken_host", "127.0.0.1"),
+            port=getattr(self.settings, "kraken_port", 8081),
+            station_lat=getattr(self.settings, "station_lat", None),
+            station_lon=getattr(self.settings, "station_lon", None),
+            publisher=self._publisher,
+            use_mock=getattr(self.settings, "kraken_mock", True),
+        )
+        await self._kraken_adapter.connect()
+        logger.info("kraken_sdr_initialized")
+
+        # --- L1: TAK Client ---
+        from hydra_c2.infrastructure.tak.client import TakClientFactory
+
+        self._tak_client = TakClientFactory.create(
+            self.settings.tak,
+            publisher=self._publisher,
+        )
+        await self._tak_client.connect()
+        logger.info("tak_client_initialized", protocol=self.settings.tak.protocol)
+
+        # --- L2: Meshtastic ---
+        from hydra_c2.infrastructure.mesh.meshtastic import MeshtasticAdapter
+
+        self._meshtastic_adapter = MeshtasticAdapter(
+            connection_type=getattr(self.settings, "meshtastic_connection", "mock"),
+            publisher=self._publisher,
+        )
+        await self._meshtastic_adapter.connect()
+        logger.info("meshtastic_initialized")
+
+        # --- L5: ML Analytics ---
+        from hydra_c2.infrastructure.analytics.ml import MlAnalyticsEngine
+
+        self._ml_engine = MlAnalyticsEngine(
+            publisher=self._publisher,
+            enable_llm=getattr(self.settings, "enable_llm_analytics", True),
+            do_gpu_host=self.settings.do_gpu_host,
+        )
+        await self._ml_engine.start()
+        logger.info("ml_analytics_initialized")
+
         logger.info("container_started")
 
     async def shutdown(self) -> None:
         """Gracefully shutdown all infrastructure connections."""
         logger.info("container_shutting_down")
 
+        if self._ml_engine:
+            await self._ml_engine.stop()
+        if self._meshtastic_adapter:
+            await self._meshtastic_adapter.disconnect()
+        if self._tak_client:
+            await self._tak_client.disconnect()
+        if self._kraken_adapter:
+            await self._kraken_adapter.disconnect()
         if self._publisher:
             await self._publisher.disconnect()
         if self._subscriber:
@@ -142,6 +204,28 @@ class Container:
         """Get the message subscriber."""
         assert self._subscriber is not None, "Container not started"
         return self._subscriber
+
+    # --- New adapter accessors ---
+
+    @property
+    def kraken_adapter(self) -> Any:
+        assert self._kraken_adapter is not None, "Container not started"
+        return self._kraken_adapter
+
+    @property
+    def tak_client(self) -> Any:
+        assert self._tak_client is not None, "Container not started"
+        return self._tak_client
+
+    @property
+    def meshtastic_adapter(self) -> Any:
+        assert self._meshtastic_adapter is not None, "Container not started"
+        return self._meshtastic_adapter
+
+    @property
+    def ml_engine(self) -> Any:
+        assert self._ml_engine is not None, "Container not started"
+        return self._ml_engine
 
     # --- Use case factories ---
 
