@@ -26,7 +26,7 @@ export function LayerToggle({
   return (
     <div className="hidden lg:flex items-center gap-1.5">
       <ToggleButton label="Threat Rings" active={showThreatRings} onClick={onToggleThreatRings} />
-      <ToggleButton label="DMZ" active={showDmz} onClick={onToggleDmz} />
+      <ToggleButton label="Zones" active={showDmz} onClick={onToggleDmz} />
       <ToggleButton label="Trails" active={showTrails} onClick={onToggleTrails} />
       <ToggleButton label="CRT" active={crtMode} onClick={onToggleCrt} />
       <ToggleButton label="Satellite" active={satelliteMode} onClick={onToggleSatellite} />

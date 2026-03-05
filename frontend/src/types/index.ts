@@ -49,7 +49,7 @@ export interface ThreatAssessmentItem {
   domain: string;
   composite_score: number;
   classification: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
-  distance_to_seoul_km: number;
+  distance_to_tehran_km: number;
   closest_critical_asset: string;
 }
 

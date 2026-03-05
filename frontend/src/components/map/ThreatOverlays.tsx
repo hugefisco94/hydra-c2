@@ -42,11 +42,17 @@ function getThreatStyle(actor: Actor): ThreatStyle | null {
   if (actor.affiliation !== 'HOSTILE') return null;
 
   const assessedType = actor.metadata?.assessed_type;
-  const isTel =
-    actor.name.toUpperCase() === 'VENOM-5' ||
-    (typeof assessedType === 'string' && assessedType.toUpperCase().includes('TEL'));
+  const isHighThreat =
+    (typeof assessedType === 'string' && (
+      assessedType.toUpperCase().includes('TEL') ||
+      assessedType.toUpperCase().includes('SHAHAB') ||
+      assessedType.toUpperCase().includes('EMAD') ||
+      assessedType.toUpperCase().includes('SHAHEED') ||
+      assessedType.toUpperCase().includes('IRGC') ||
+      assessedType.toUpperCase().includes('FAST-ATTACK')
+    ));
 
-  if (isTel) {
+  if (isHighThreat) {
     return {
       radiusMeters: 80_000,
       className: 'threat-ring threat-ring--pulse',

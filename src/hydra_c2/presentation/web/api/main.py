@@ -305,12 +305,16 @@ async def check_geofence(
 
 # Key reference locations for threat scoring
 _CRITICAL_LOCATIONS = {
-    'SEOUL': (37.5665, 126.9780),
-    'PYONGYANG': (39.0392, 125.7625),
-    'BUSAN': (35.1796, 129.0756),
-    'DMZ_CENTER': (37.95, 126.85),
-    'NLL_WEST': (37.70, 124.80),
-    'OSAN_AB': (37.0901, 127.0297),  # US Air Base
+    'TEHRAN': (35.6892, 51.3890),
+    'NATANZ': (33.7225, 51.7275),        # Nuclear enrichment facility
+    'BUSHEHR': (28.9234, 50.8203),       # Nuclear power plant
+    'BANDAR_ABBAS': (27.1865, 56.2808),  # IRIN naval HQ / Strait of Hormuz
+    'ISFAHAN': (32.6546, 51.6680),       # UCF / nuclear R&D
+    'FORDOW': (34.7081, 51.2403),        # Underground enrichment
+    'STRAIT_OF_HORMUZ': (26.5667, 56.2500),  # Chokepoint
+    'AL_UDEID_AB': (25.1174, 51.3150),   # USAFCENT / CENTCOM fwd HQ (Qatar)
+    'AL_DHAFRA_AB': (24.2481, 54.5472),  # USAF / UAE
+    'CAMP_ARIFJAN': (29.1500, 47.9250),  # US Army / Kuwait
 }
 
 
@@ -355,13 +359,13 @@ def _compute_threat_score(actor_data: dict) -> dict:
     else:
         type_score = TYPE_WEIGHTS.get(actor_type, 0.5)
 
-    # Proximity to Seoul (most critical)
+    # Proximity to Tehran (most critical asset in theater)
     pos = actor_data.get('position', {})
-    lat = pos.get('latitude', 37.5)
-    lon = pos.get('longitude', 127.0)
-    dist_seoul = _haversine_km(lat, lon, *_CRITICAL_LOCATIONS['SEOUL'])
-    # Normalize: 0km=1.0, 200km=0.0
-    proximity_score = max(0.0, 1.0 - dist_seoul / 200.0)
+    lat = pos.get('latitude', 35.6892)
+    lon = pos.get('longitude', 51.389)
+    dist_tehran = _haversine_km(lat, lon, *_CRITICAL_LOCATIONS['TEHRAN'])
+    # Normalize: 0km=1.0, 500km=0.0 (ME theater is geographically larger)
+    proximity_score = max(0.0, 1.0 - dist_tehran / 500.0)
 
     # Composite (Panopticon lethality formula adapted)
     composite = (
@@ -382,7 +386,7 @@ def _compute_threat_score(actor_data: dict) -> dict:
         'threat_level_score': threat_score,
         'type_score': type_score,
         'proximity_score': round(proximity_score, 3),
-        'distance_to_seoul_km': round(dist_seoul, 1),
+        'distance_to_tehran_km': round(dist_tehran, 1),
         'closest_critical_asset': closest_asset[0],
         'distance_to_closest_km': round(
             _haversine_km(lat, lon, closest_asset[1][0], closest_asset[1][1]), 1
@@ -450,7 +454,7 @@ PROTOCOL_FIELD_TYPES = [
     'SEQUENCE_NUMBER', 'TYPE', 'DATA', 'CHECKSUM', 'CUSTOM',
 ]
 
-# Military frequency bands relevant to Korean Peninsula ops
+# Military frequency bands relevant to Persian Gulf / ME theater ops
 MIL_FREQ_BANDS = {
     'HF': {'min_mhz': 3.0, 'max_mhz': 30.0, 'usage': 'Long-range military comms'},
     'VHF_LOW': {'min_mhz': 30.0, 'max_mhz': 88.0, 'usage': 'Tactical ground comms'},
@@ -537,8 +541,8 @@ async def analytics_overview() -> dict:
 @app.get('/api/v1/analytics/distance-matrix')
 async def distance_matrix(
     affiliation: str = Query('HOSTILE', description='Filter actors by affiliation'),
-    target_lat: float = Query(37.5665, description='Target latitude (default: Seoul)'),
-    target_lon: float = Query(126.978, description='Target longitude (default: Seoul)'),
+    target_lat: float = Query(35.6892, description='Target latitude (default: Tehran)'),
+    target_lon: float = Query(51.389, description='Target longitude (default: Tehran)'),
 ) -> dict:
     """Distance matrix from filtered actors to target (Panopticon pursuit pattern)."""
     container = get_container()
@@ -902,10 +906,10 @@ async def kill_web() -> dict:
         if any(kw in assessed.upper() for kw in ['RADAR', 'SIGINT', 'ISR', 'RECONNAISSANCE', 'P-8', 'RC-135', 'RQ-4', 'RC-2', 'AN/TPS']):
             node['role'] = 'SENSOR'
             sensors.append(node)
-        elif any(kw in assessed.upper() for kw in ['MBT', 'DDG', 'FIGHTER', 'KF-21', 'MLRS', 'BATTERY']):
+        elif any(kw in assessed.upper() for kw in ['MBT', 'DDG', 'FIGHTER', 'F-35', 'F-15E', 'MLRS', 'BATTERY', 'FAC']):
             node['role'] = 'SHOOTER'
             shooters.append(node)
-        elif any(kw in assessed.upper() for kw in ['HQ', 'COMMAND', 'KC-330', 'TANKER', 'C2']):
+        elif any(kw in assessed.upper() for kw in ['HQ', 'COMMAND', 'KC-135', 'KC-46', 'TANKER', 'C2', 'E-3', 'E-8']):
             node['role'] = 'C2'
             c2_nodes.append(node)
         else:

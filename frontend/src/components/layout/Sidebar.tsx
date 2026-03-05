@@ -137,7 +137,7 @@ export function Sidebar() {
                   </div>
                   <div className="mt-1 text-[10px] text-gray-500 font-mono flex items-center justify-between">
                     <span>SCORE {threat.composite_score.toFixed(3)}</span>
-                    <span>SEOUL {threat.distance_to_seoul_km.toFixed(1)}km</span>
+                    <span>TEHRAN {threat.distance_to_tehran_km.toFixed(1)}km</span>
                   </div>
                 </div>
               );

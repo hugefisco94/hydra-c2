@@ -13,13 +13,13 @@ import {
 import { ActorMarker } from './ActorMarker';
 import { useFilteredActors } from '../../store/actorStore';
 import { ThreatOverlays } from './ThreatOverlays';
-import { DmzOverlay } from './DmzOverlay';
+import { StrategicZonesOverlay } from './StrategicZonesOverlay';
 import { ActorTrails } from './ActorTrail';
 import { ScanlineOverlay } from './ScanlineOverlay';
 
-/** Default center: Korean Peninsula */
-const DEFAULT_CENTER: [number, number] = [36.5, 127.5];
-const DEFAULT_ZOOM = 7;
+/** Default center: Iran / Persian Gulf Theater */
+const DEFAULT_CENTER: [number, number] = [32.0, 53.0];
+const DEFAULT_ZOOM = 6;
 
 /** CartoDB Dark Matter tiles — optimized for C2 dark theme */
 const TILE_URL =
@@ -78,9 +78,9 @@ export function CopMap({
             </LayerGroup>
           </LayersControl.Overlay>
 
-          <LayersControl.Overlay checked={showDmz} name="DMZ Geofence">
+          <LayersControl.Overlay checked={showDmz} name="Strategic Zones">
             <LayerGroup>
-              <DmzOverlay />
+              <StrategicZonesOverlay />
             </LayerGroup>
           </LayersControl.Overlay>
 
