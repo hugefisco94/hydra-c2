@@ -1,6 +1,6 @@
 import { useActorStore, useFilteredActors } from '../../store/actorStore';
 import type { DomainFilter } from '../../store/actorStore';
-import { AFFILIATION_COLORS, DOMAIN_LABELS } from '../../types';
+import { AFFILIATION_COLORS, DOMAIN_LABELS, THREAT_LEVEL_COLORS } from '../../types';
 import type { Affiliation, Domain } from '../../types';
 
 const DOMAINS: Domain[] = ['LAND', 'AIR', 'SEA', 'SUBSURFACE', 'SPACE', 'CYBER'];
@@ -11,9 +11,8 @@ export function Sidebar() {
   const allActors = useActorStore((s) => s.actors);
   const analyticsOverview = useActorStore((s) => s.analyticsOverview);
   const threatAssessment = useActorStore((s) => s.threatAssessment);
-  const mdoStatus = useActorStore((s) => s.mdoStatus);
-  const oodaCycle = useActorStore((s) => s.oodaCycle);
-  const killWebMetrics = useActorStore((s) => s.killWebMetrics);
+  const osintFeeds = useActorStore((s) => s.osintFeeds);
+  const causalAssessment = useActorStore((s) => s.causalAssessment);
   const selectedActor = useActorStore((s) => s.selectedActor);
   const selectActor = useActorStore((s) => s.selectActor);
   const domainFilters = useActorStore((s) => s.domainFilters);
@@ -145,86 +144,87 @@ export function Sidebar() {
           </div>
         )}
       </div>
-      {/* MDO Status Panel */}
+      {/* OSINT Intelligence Panel */}
       <div className="p-3 border-b border-gray-800 space-y-2.5 bg-gray-950/80">
         <div className="flex items-center justify-between">
           <h3 className="text-[11px] font-semibold text-gray-400 uppercase tracking-[0.18em]">
-            MDO Status
+            OSINT Intel
           </h3>
-          <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
-            mdoStatus?.current_phase === 'COMPETE' ? 'bg-emerald-950/50 text-emerald-300 border border-emerald-700/40' :
-            mdoStatus?.current_phase === 'PENETRATE' ? 'bg-amber-950/50 text-amber-300 border border-amber-700/40' :
-            'bg-red-950/50 text-red-300 border border-red-700/40'
-          }`}>
-            {mdoStatus?.current_phase ?? 'N/A'}
-          </span>
+          {causalAssessment && (
+            <span
+              className="text-[10px] font-mono px-1.5 py-0.5 rounded border"
+              style={{
+                color: THREAT_LEVEL_COLORS[causalAssessment.threat_level] ?? '#6b7280',
+                borderColor: `${THREAT_LEVEL_COLORS[causalAssessment.threat_level] ?? '#6b7280'}66`,
+                backgroundColor: `${THREAT_LEVEL_COLORS[causalAssessment.threat_level] ?? '#6b7280'}1a`,
+              }}
+            >
+              {causalAssessment.threat_level}
+            </span>
+          )}
         </div>
 
-        {/* Domain Coverage Grid */}
-        <div className="grid grid-cols-3 gap-1 text-[10px] font-mono">
-          {mdoStatus && ['LAND', 'SEA', 'AIR', 'SPACE', 'CYBER', 'EMS'].map(domain => {
-            const d = mdoStatus.domains[domain];
-            const statusColor = d?.status === 'PERMISSIVE' ? 'text-emerald-400' :
-                                d?.status === 'CONTESTED' ? 'text-amber-400' :
-                                d?.status === 'DENIED' ? 'text-red-400' : 'text-gray-500';
-            return (
-              <div key={domain} className="px-1.5 py-1 rounded bg-gray-900/60 border border-gray-800 text-center">
-                <div className="text-gray-500">{domain}</div>
-                <div className={`font-semibold ${statusColor}`}>{d?.status?.slice(0,4) ?? '---'}</div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* OODA Cycle */}
-        {oodaCycle && (
-          <div className="space-y-1">
-            <div className="text-[10px] text-gray-500 uppercase tracking-[0.14em]">OODA Cycle</div>
-            <div className="flex gap-1">
-              {(['OBSERVE', 'ORIENT', 'DECIDE', 'ACT'] as const).map(phase => {
-                const p = oodaCycle.ooda_phases[phase];
-                const bg = p?.status === 'GREEN' ? 'bg-emerald-900/40 border-emerald-700/30' :
-                           p?.status === 'AMBER' ? 'bg-amber-900/40 border-amber-700/30' :
-                           'bg-red-900/40 border-red-700/30';
-                return (
-                  <div key={phase} className={`flex-1 text-center py-1 rounded border text-[9px] font-mono ${bg}`}>
-                    <div className="text-gray-400">{phase.slice(0,3)}</div>
-                    <div className="text-gray-200 font-semibold">{((p?.score ?? 0) * 100).toFixed(0)}%</div>
-                  </div>
-                );
-              })}
-            </div>
+        {/* Bayesian Composite Score */}
+        {causalAssessment && (
+          <div className="space-y-1.5">
             <div className="flex items-center justify-between text-[10px] font-mono">
-              <span className="text-gray-500">CYCLE</span>
-              <span className={`font-semibold ${
-                oodaCycle.cycle_assessment === 'SUPERIOR' ? 'text-emerald-400' :
-                oodaCycle.cycle_assessment === 'ADEQUATE' ? 'text-blue-400' :
-                oodaCycle.cycle_assessment === 'DEGRADED' ? 'text-amber-400' : 'text-red-400'
-              }`}>{oodaCycle.cycle_assessment}</span>
+              <span className="text-gray-500">COMPOSITE</span>
+              <span className="text-gray-200 font-semibold">{causalAssessment.composite_score.toFixed(3)}</span>
             </div>
-          </div>
-        )}
-
-        {/* Kill Web Connectivity */}
-        {killWebMetrics && (
-          <div className="flex items-center justify-between text-[10px] font-mono">
-            <span className="text-gray-500">KILL WEB</span>
-            <span className="text-gray-300">{killWebMetrics.kill_web_metrics.connectivity.toFixed(1)} conn</span>
-            <span className="text-gray-500">{killWebMetrics.total_edges} links</span>
-          </div>
-        )}
-
-        {/* Convergence Readiness */}
-        {mdoStatus && (
-          <div className="flex items-center justify-between text-[10px] font-mono">
-            <span className="text-gray-500">CONVERGENCE</span>
-            <div className="flex-1 mx-2 h-1.5 bg-gray-800 rounded-full overflow-hidden">
+            <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
               <div
-                className="h-full bg-emerald-500 rounded-full transition-all"
-                style={{ width: `${(mdoStatus.convergence_readiness * 100)}%` }}
+                className="h-full rounded-full transition-all"
+                style={{
+                  width: `${Math.min(100, causalAssessment.composite_score * 100)}%`,
+                  backgroundColor: THREAT_LEVEL_COLORS[causalAssessment.threat_level] ?? '#6b7280',
+                }}
               />
             </div>
-            <span className="text-gray-300">{(mdoStatus.convergence_readiness * 100).toFixed(0)}%</span>
+
+            {/* Causal Factors */}
+            <div className="grid grid-cols-2 gap-1 text-[10px] font-mono">
+              <div className="px-1.5 py-1 rounded bg-gray-900/60 border border-gray-800">
+                <div className="text-gray-500">ESCALATION</div>
+                <div className="text-amber-300 font-semibold">{(causalAssessment.escalation_probability * 100).toFixed(0)}%</div>
+              </div>
+              <div className="px-1.5 py-1 rounded bg-gray-900/60 border border-gray-800">
+                <div className="text-gray-500">MIL POSTURE</div>
+                <div className="text-blue-300 font-semibold">{(causalAssessment.military_posture_index * 100).toFixed(0)}%</div>
+              </div>
+              <div className="px-1.5 py-1 rounded bg-gray-900/60 border border-gray-800">
+                <div className="text-gray-500">GDELT TONE</div>
+                <div className="text-gray-200">{causalAssessment.causal_factors.gdelt_tone_avg.toFixed(2)}</div>
+              </div>
+              <div className="px-1.5 py-1 rounded bg-gray-900/60 border border-gray-800">
+                <div className="text-gray-500">AIR DENSITY</div>
+                <div className="text-gray-200">{causalAssessment.causal_factors.aircraft_density.toFixed(1)}</div>
+              </div>
+            </div>
+
+            {/* Evidence Summary */}
+            <div className="flex items-center justify-between text-[10px] font-mono">
+              <span className="text-gray-500">GDELT</span>
+              <span className="text-gray-300">{causalAssessment.evidence_summary.gdelt_articles} articles</span>
+            </div>
+            <div className="flex items-center justify-between text-[10px] font-mono">
+              <span className="text-gray-500">OPENSKY</span>
+              <span className="text-gray-300">{causalAssessment.evidence_summary.military_flights} mil flights</span>
+            </div>
+          </div>
+        )}
+
+        {/* OSINT Feed Breakdown */}
+        {osintFeeds && (
+          <div className="space-y-1">
+            <div className="text-[10px] text-gray-500 uppercase tracking-[0.14em]">Feed Activity</div>
+            <div className="flex gap-1 text-[10px] font-mono">
+              {Object.entries(osintFeeds.breakdown).map(([key, count]) => (
+                <div key={key} className="flex-1 text-center py-1 rounded border border-gray-800 bg-gray-900/40">
+                  <div className="text-gray-400">{key}</div>
+                  <div className="text-gray-200 font-semibold">{count}</div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>

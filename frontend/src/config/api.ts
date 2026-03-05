@@ -24,10 +24,8 @@ export const ENDPOINTS = {
   adsbStateModel: `${API_BASE_URL}/api/v1/adsb/state-model`,
   aisVesselModel: `${API_BASE_URL}/api/v1/ais/vessel-model`,
   signalChain: `${API_BASE_URL}/api/v1/signals/processing-chain`,
-  mdoStatus: `${API_BASE_URL}/api/v1/doctrine/mdo-status`,
-  killWeb: `${API_BASE_URL}/api/v1/doctrine/kill-web`,
-  oodaCycle: `${API_BASE_URL}/api/v1/doctrine/ooda-cycle`,
-  forcePackages: `${API_BASE_URL}/api/v1/doctrine/force-packages`,
+  osintFeeds: `${API_BASE_URL}/api/v1/osint/feeds`,
+  osintThreatAssessment: `${API_BASE_URL}/api/v1/osint/threat-assessment`,
 } as const;
 
 /** Polling interval in milliseconds for real-time updates */

@@ -25,9 +25,8 @@ function App() {
   const setConnectionState = useActorStore((s) => s.setConnectionState);
   const fetchThreatAssessment = useActorStore((s) => s.fetchThreatAssessment);
   const fetchAnalyticsOverview = useActorStore((s) => s.fetchAnalyticsOverview);
-  const fetchMdoStatus = useActorStore((s) => s.fetchMdoStatus);
-  const fetchOodaCycle = useActorStore((s) => s.fetchOodaCycle);
-  const fetchKillWebMetrics = useActorStore((s) => s.fetchKillWebMetrics);
+  const fetchOsintFeeds = useActorStore((s) => s.fetchOsintFeeds);
+  const fetchCausalAssessment = useActorStore((s) => s.fetchCausalAssessment);
   const toggleSidebar = useActorStore((s) => s.toggleSidebar);
 
   const [showThreatRings, setShowThreatRings] = useState(true);
@@ -66,9 +65,8 @@ function App() {
     fetchActors();
     fetchThreatAssessment();
     fetchAnalyticsOverview();
-    fetchMdoStatus();
-    fetchOodaCycle();
-    fetchKillWebMetrics();
+    fetchOsintFeeds();
+    fetchCausalAssessment();
 
     // Polling intervals
     const healthInterval = setInterval(checkHealth, 10_000);
@@ -76,9 +74,8 @@ function App() {
       fetchActors();
       fetchThreatAssessment();
       fetchAnalyticsOverview();
-      fetchMdoStatus();
-      fetchOodaCycle();
-      fetchKillWebMetrics();
+      fetchOsintFeeds();
+      fetchCausalAssessment();
     }, POLL_INTERVAL_MS);
 
     return () => {
@@ -90,9 +87,8 @@ function App() {
     fetchActors,
     fetchThreatAssessment,
     fetchAnalyticsOverview,
-    fetchMdoStatus,
-    fetchOodaCycle,
-    fetchKillWebMetrics,
+    fetchOsintFeeds,
+    fetchCausalAssessment,
   ]);
 
   return (
@@ -115,7 +111,7 @@ function App() {
             <span className="text-white">-C2</span>
           </h1>
           <span className="text-xs text-gray-500 hidden sm:inline font-mono tracking-widest">
-            MULTI-DOMAIN C2 // COP
+            OSINT THREAT INTEL // COP
           </span>
         </div>
         <div className="flex items-center gap-3">
