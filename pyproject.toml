@@ -1,7 +1,7 @@
 [project]
 name = "hydra-c2"
 version = "0.1.0"
-description = "HYDRA-C2: Hybrid Universal Dynamic Reconnaissance Architecture - Open-source Multi-Domain C2 System"
+description = "HYDRA-C2: Unified Multi-Domain C2 + Defense Wargaming Simulation Engine — OSINT-driven Bayesian intelligence with academic wargaming simulator"
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.11"

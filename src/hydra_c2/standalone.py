@@ -21,82 +21,99 @@ import structlog
 import uvicorn
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+
+from hydra_c2.wargame.router import mount_wargame_ui, wargame_router
 
 logger = structlog.get_logger()
 
 # ─── In-memory actor data ────────────────────────────────────────────────────
 
 ACTOR_TYPE_TO_DOMAIN = {
-    "PERSON": "LAND", "VEHICLE": "LAND", "UNIT": "LAND", "EQUIPMENT": "LAND",
-    "AIRCRAFT": "AIR", "UAV": "AIR",
+    "PERSON": "LAND",
+    "VEHICLE": "LAND",
+    "UNIT": "LAND",
+    "EQUIPMENT": "LAND",
+    "AIRCRAFT": "AIR",
+    "UAV": "AIR",
     "VESSEL": "SEA",
     "TRANSMISSION_SOURCE": "CYBER",
     "UNKNOWN": "LAND",
 }
 
 AFFILIATION_MAP = {
-    "FRIENDLY": "FRIEND", "HOSTILE": "HOSTILE",
-    "NEUTRAL": "NEUTRAL", "UNKNOWN": "UNKNOWN",
+    "FRIENDLY": "FRIEND",
+    "HOSTILE": "HOSTILE",
+    "NEUTRAL": "NEUTRAL",
+    "UNKNOWN": "UNKNOWN",
 }
 
 # SIDC codes per actor type + affiliation
 SIDC_TABLE = {
-    ("UNIT", "FRIENDLY"):              "SFGPUCI----D---",
-    ("VEHICLE", "FRIENDLY"):           "SFGPUCVAM--D---",
-    ("AIRCRAFT", "FRIENDLY"):          "SFAPMF------D--",
-    ("VESSEL", "FRIENDLY"):            "SFSPCLDD---D---",
-    ("UAV", "FRIENDLY"):               "SFAPMFQ----D---",
-    ("UNIT", "HOSTILE"):               "SHGPUCI----D---",
-    ("AIRCRAFT", "HOSTILE"):           "SHAPMF------D--",
-    ("VEHICLE", "HOSTILE"):            "SHGPUCVAM--D---",
-    ("VESSEL", "HOSTILE"):             "SHSPCLDD---D---",
+    ("UNIT", "FRIENDLY"): "SFGPUCI----D---",
+    ("VEHICLE", "FRIENDLY"): "SFGPUCVAM--D---",
+    ("AIRCRAFT", "FRIENDLY"): "SFAPMF------D--",
+    ("VESSEL", "FRIENDLY"): "SFSPCLDD---D---",
+    ("UAV", "FRIENDLY"): "SFAPMFQ----D---",
+    ("UNIT", "HOSTILE"): "SHGPUCI----D---",
+    ("AIRCRAFT", "HOSTILE"): "SHAPMF------D--",
+    ("VEHICLE", "HOSTILE"): "SHGPUCVAM--D---",
+    ("VESSEL", "HOSTILE"): "SHSPCLDD---D---",
     ("TRANSMISSION_SOURCE", "HOSTILE"): "SHGPE------D---",
-    ("VESSEL", "NEUTRAL"):             "SNSPCLDD---D---",
-    ("AIRCRAFT", "NEUTRAL"):           "SNAPMF------D--",
-    ("UNKNOWN", "UNKNOWN"):            "SUGPUCI----D---",
-    ("UAV", "UNKNOWN"):                "SUAPMFQ----D---",
-    ("PERSON", "UNKNOWN"):             "SUGPUCP----D---",
+    ("VESSEL", "NEUTRAL"): "SNSPCLDD---D---",
+    ("AIRCRAFT", "NEUTRAL"): "SNAPMF------D--",
+    ("UNKNOWN", "UNKNOWN"): "SUGPUCI----D---",
+    ("UAV", "UNKNOWN"): "SUAPMFQ----D---",
+    ("PERSON", "UNKNOWN"): "SUGPUCP----D---",
 }
 
 MOCK_ACTORS = [
-    {"callsign": "ALPHA-1",       "type": "UNIT",     "aff": "FRIENDLY", "lat": 37.5665, "lon": 126.9780, "alt": 50.0},
-    {"callsign": "VIPER-6",       "type": "VEHICLE",  "aff": "FRIENDLY", "lat": 37.4563, "lon": 126.7052, "alt": 15.0},
-    {"callsign": "EAGLE-21",      "type": "AIRCRAFT", "aff": "FRIENDLY", "lat": 36.9600, "lon": 127.0300, "alt": 8500.0},
-    {"callsign": "TRIDENT-3",     "type": "VESSEL",   "aff": "FRIENDLY", "lat": 35.0794, "lon": 129.0800, "alt": 0.0},
-    {"callsign": "RAVEN-7",       "type": "UAV",      "aff": "FRIENDLY", "lat": 37.9000, "lon": 126.8500, "alt": 3000.0},
-    {"callsign": "BEAR-1",        "type": "UNIT",     "aff": "HOSTILE",  "lat": 38.3200, "lon": 126.5500, "alt": 120.0},
-    {"callsign": "FENCER-2",      "type": "AIRCRAFT", "aff": "HOSTILE",  "lat": 39.0200, "lon": 125.7500, "alt": 10000.0},
-    {"callsign": "VENOM-5",       "type": "VEHICLE",  "aff": "HOSTILE",  "lat": 38.5100, "lon": 127.0100, "alt": 85.0},
-    {"callsign": "SHARK-9",       "type": "VESSEL",   "aff": "HOSTILE",  "lat": 37.5000, "lon": 124.5000, "alt": 0.0},
-    {"callsign": "GHOST-4",       "type": "TRANSMISSION_SOURCE", "aff": "HOSTILE", "lat": 38.7500, "lon": 125.9000, "alt": 0.0},
-    {"callsign": "JADE-EXPRESS",  "type": "VESSEL",   "aff": "NEUTRAL",  "lat": 34.5000, "lon": 128.5000, "alt": 0.0},
-    {"callsign": "KE-801",        "type": "AIRCRAFT", "aff": "NEUTRAL",  "lat": 36.5700, "lon": 126.8000, "alt": 11000.0},
-    {"callsign": "CONTACT-ALPHA", "type": "UNKNOWN",  "aff": "UNKNOWN",  "lat": 37.7500, "lon": 125.2000, "alt": 500.0},
-    {"callsign": "SHADOW-X",      "type": "UAV",      "aff": "UNKNOWN",  "lat": 38.0000, "lon": 126.2000, "alt": 1500.0},
-    {"callsign": "NOMAD-12",      "type": "PERSON",   "aff": "UNKNOWN",  "lat": 37.8200, "lon": 126.7500, "alt": 200.0},
+    {"callsign": "ALPHA-1", "type": "UNIT", "aff": "FRIENDLY", "lat": 37.5665, "lon": 126.9780, "alt": 50.0},
+    {"callsign": "VIPER-6", "type": "VEHICLE", "aff": "FRIENDLY", "lat": 37.4563, "lon": 126.7052, "alt": 15.0},
+    {"callsign": "EAGLE-21", "type": "AIRCRAFT", "aff": "FRIENDLY", "lat": 36.9600, "lon": 127.0300, "alt": 8500.0},
+    {"callsign": "TRIDENT-3", "type": "VESSEL", "aff": "FRIENDLY", "lat": 35.0794, "lon": 129.0800, "alt": 0.0},
+    {"callsign": "RAVEN-7", "type": "UAV", "aff": "FRIENDLY", "lat": 37.9000, "lon": 126.8500, "alt": 3000.0},
+    {"callsign": "BEAR-1", "type": "UNIT", "aff": "HOSTILE", "lat": 38.3200, "lon": 126.5500, "alt": 120.0},
+    {"callsign": "FENCER-2", "type": "AIRCRAFT", "aff": "HOSTILE", "lat": 39.0200, "lon": 125.7500, "alt": 10000.0},
+    {"callsign": "VENOM-5", "type": "VEHICLE", "aff": "HOSTILE", "lat": 38.5100, "lon": 127.0100, "alt": 85.0},
+    {"callsign": "SHARK-9", "type": "VESSEL", "aff": "HOSTILE", "lat": 37.5000, "lon": 124.5000, "alt": 0.0},
+    {
+        "callsign": "GHOST-4",
+        "type": "TRANSMISSION_SOURCE",
+        "aff": "HOSTILE",
+        "lat": 38.7500,
+        "lon": 125.9000,
+        "alt": 0.0,
+    },
+    {"callsign": "JADE-EXPRESS", "type": "VESSEL", "aff": "NEUTRAL", "lat": 34.5000, "lon": 128.5000, "alt": 0.0},
+    {"callsign": "KE-801", "type": "AIRCRAFT", "aff": "NEUTRAL", "lat": 36.5700, "lon": 126.8000, "alt": 11000.0},
+    {"callsign": "CONTACT-ALPHA", "type": "UNKNOWN", "aff": "UNKNOWN", "lat": 37.7500, "lon": 125.2000, "alt": 500.0},
+    {"callsign": "SHADOW-X", "type": "UAV", "aff": "UNKNOWN", "lat": 38.0000, "lon": 126.2000, "alt": 1500.0},
+    {"callsign": "NOMAD-12", "type": "PERSON", "aff": "UNKNOWN", "lat": 37.8200, "lon": 126.7500, "alt": 200.0},
 ]
 
 # Build full actor list with IDs
 _actors = []
 for a in MOCK_ACTORS:
     sidc = SIDC_TABLE.get((a["type"], a["aff"]), "SUGPUCI----D---")
-    _actors.append({
-        "id": str(uuid4()),
-        "name": a["callsign"],
-        "sidc": sidc,
-        "affiliation": AFFILIATION_MAP[a["aff"]],
-        "domain": ACTOR_TYPE_TO_DOMAIN.get(a["type"], "LAND"),
-        "position": {
-            "latitude": a["lat"],
-            "longitude": a["lon"],
-            "altitude": a["alt"],
-        },
-        "last_seen": (datetime.now(UTC) - timedelta(minutes=hash(a["callsign"]) % 60)).isoformat(),
-        "source": "STANDALONE",
-        "metadata": {"actor_type": a["type"], "standalone_mode": True},
-    })
+    _actors.append(
+        {
+            "id": str(uuid4()),
+            "name": a["callsign"],
+            "sidc": sidc,
+            "affiliation": AFFILIATION_MAP[a["aff"]],
+            "domain": ACTOR_TYPE_TO_DOMAIN.get(a["type"], "LAND"),
+            "position": {
+                "latitude": a["lat"],
+                "longitude": a["lon"],
+                "altitude": a["alt"],
+            },
+            "last_seen": (datetime.now(UTC) - timedelta(minutes=hash(a["callsign"]) % 60)).isoformat(),
+            "source": "STANDALONE",
+            "metadata": {"actor_type": a["type"], "standalone_mode": True},
+        }
+    )
 
 
 # ─── FastAPI application ─────────────────────────────────────────────────────
@@ -114,6 +131,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.state.standalone_actors = _actors
+
+app.include_router(wargame_router)
 
 
 @app.get("/health")
@@ -199,9 +220,11 @@ def mount_frontend(application: FastAPI) -> None:
 
 
 mount_frontend(app)
+mount_wargame_ui(app)
 
 
 # ─── Entrypoint ──────────────────────────────────────────────────────────────
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="HYDRA-C2 Standalone Server")
@@ -217,6 +240,7 @@ def main() -> None:
  │  Health     : http://{args.host}:{args.port}/health                 │
  │  Actors API : http://{args.host}:{args.port}/api/v1/actors          │
  │  COP Dashboard : http://{args.host}:{args.port}/hydra-c2/           │
+ │  Wargame UI  : http://{args.host}:{args.port}/wargame/              │
  │                                                              │
  │  Mode: IN-MEMORY (no PostGIS/Neo4j/MQTT required)            │
  │  Actors loaded: {len(_actors):>3}                                     │
