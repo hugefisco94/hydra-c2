@@ -219,6 +219,33 @@ with OpenSky military flight tracking:
  ────────────────────────────────────────────────────────────────
 ```
 
+## WARGAME SIMULATION MODULE
+
+HYDRA-C2 now includes an integrated defense academic wargaming simulation engine
+that runs alongside the existing COP intelligence backend. The module provides a
+defense-only synthetic workflow: policy gate confirmation, demo authentication,
+scenario briefing, checklist-driven analyst review, note capture, and human
+escalation-focused reporting.
+
+The simulator enforces explicit guardrails (no live control actions, no device or
+network changes, no external system connectivity) and keeps all exercise content
+within synthetic boundaries. This allows tabletop-style analyst training while
+preserving the clean separation between educational simulation and operational C2
+execution paths.
+
+Wargame endpoints are mounted with the same FastAPI application so briefing flows
+can coexist with C2 actor intelligence APIs. In standalone mode, enhanced briefing
+output can incorporate in-memory actor context from the C2 side to support unified
+academic scenario framing and reporting continuity with the COP dashboard.
+
+Quick start:
+
+```text
+1) Start HYDRA-C2 (standalone or full API mode)
+2) Open /wargame/ in a browser
+3) Authenticate with demo credentials and run the synthetic briefing workflow
+```
+
 ---
 
 ## DESIGN PHILOSOPHY

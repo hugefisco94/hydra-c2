@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HYDRA Defense Wargame // C2 Integration</title>
+    <link rel="stylesheet" href="/wargame/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <p class="eyebrow">PUBLIC DEFENSE SIMULATION</p>
+        <h1>HYDRA Defense Wargame</h1>
+        <p class="lede">
+          공개 방어 목적의 합성 브리핑 워게임입니다. 로그인 뒤에도 실제 운영 기능은
+          열리지 않으며, 사람 중심의 검토와 보고 흐름만 허용됩니다.
+        </p>
+        <div class="seal-row">
+          <span class="seal">Synthetic Only</span>
+          <span class="seal">Human Escalation</span>
+          <span class="seal">PR First</span>
+        </div>
+        <ul class="guardrails">
+          <li>실제 공격 기능 금지</li>
+          <li>합성 시나리오만 허용</li>
+          <li>로그인 후 합성 브리핑까지만 허용</li>
+        </ul>
+        <section class="intro-board" aria-label="simulation flow">
+          <div class="flow-node">
+            <strong>1. Authenticate</strong>
+            <span>Demo access only</span>
+          </div>
+          <div class="flow-arrow" aria-hidden="true"></div>
+          <div class="flow-node">
+            <strong>2. Policy Gate</strong>
+            <span>Boundary verified</span>
+          </div>
+          <div class="flow-arrow" aria-hidden="true"></div>
+          <div class="flow-node">
+            <strong>3. Brief + Report</strong>
+            <span>Synthetic review only</span>
+          </div>
+        </section>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Access Gate</h2>
+          <span id="health-pill" class="pill">checking</span>
+        </div>
+
+        <form id="login-form" class="form">
+          <label>
+            Username
+            <input name="username" type="text" value="analyst" required />
+          </label>
+          <label>
+            Password
+            <input name="password" type="password" value="defense-only" required />
+          </label>
+          <button type="submit">Authenticate</button>
+        </form>
+
+        <div class="demo-box">
+          <strong>Demo credentials</strong>
+          <p>`analyst` / `defense-only`</p>
+        </div>
+
+        <pre id="result" class="result">Awaiting policy check...</pre>
+      </section>
+
+      <section class="briefing" id="briefing-panel" hidden>
+        <div class="panel-head">
+          <h2>Synthetic Briefing</h2>
+          <span class="pill">safe scope</span>
+        </div>
+        <div id="briefing-content" class="briefing-content"></div>
+        <div class="workspace">
+          <section class="work-card">
+            <div class="panel-head work-head">
+              <h3>Checklist</h3>
+              <span id="checklist-progress" class="pill">0 / 0</span>
+            </div>
+            <form id="checklist-form" class="checklist"></form>
+          </section>
+
+          <section class="work-card">
+            <div class="panel-head work-head">
+              <h3>Briefing Note</h3>
+              <button id="report-copy" class="secondary-button" type="button">
+                Copy Summary
+              </button>
+            </div>
+            <label class="report-label" for="report-notes">Analyst Notes</label>
+            <textarea
+              id="report-notes"
+              class="report-notes"
+              placeholder="Write a short synthetic-only briefing note."
+            ></textarea>
+            <pre id="report-preview" class="report-preview">Report preview will appear here.</pre>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <script src="/wargame/app.js"></script>
+  </body>
+</html>
